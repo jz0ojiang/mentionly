@@ -14,6 +14,7 @@
 - **命令模式** — `/斜杠` 命令触发回调，不插入实体
 - **IME 兼容** — 正确处理中文/日文/韩文输入法
 - **序列化与反序列化** — `getDataParts()` 用于提交，`setContent()` 用于编辑已发消息
+- **Teleport 下拉列表** — 下拉列表默认 teleport 到 `<body>`，避免被外层 `overflow: hidden` 裁剪
 - **光标跟随弹窗** — 可选 `popupMode="cursor"` 让弹窗跟随光标位置
 - **零依赖** — 仅需 Vue 3
 
@@ -44,7 +45,6 @@ const triggers = [
       { id: '2', label: 'Project Beta' },
     ],
     dataPart: (item) => ({
-      type: 'data',
       dataType: 'project_ref',
       projectId: item.id,
       projectName: item.label,
@@ -84,7 +84,7 @@ const {
     {
       char: '@',
       items: (q) => projects.filter(p => p.label.includes(q)),
-      dataPart: (item) => ({ type: 'data', dataType: 'project_ref', projectId: item.id }),
+      dataPart: (item) => ({ dataType: 'project_ref', projectId: item.id }),
     },
   ],
 })
@@ -113,7 +113,7 @@ interface MentionTrigger {
   mode?: 'inline' | 'command'     // 默认 'inline'
   items: MentionItem[]            // 静态数组
     | ((query: string) => MentionItem[] | Promise<MentionItem[]>)  // 或函数
-  debounce?: number               // 异步防抖毫秒数，默认 300
+  debounce?: number               // 异步防抖毫秒数，默认 0
   dataPart?: (item) => Record<string, any>  // 输出转换函数
   schema?: { type: string; mapping: Record<string, string> }  // 声明式映射
   onSelect?: (item) => void       // 命令模式回调
@@ -124,7 +124,7 @@ interface MentionTrigger {
 
 ```ts
 const triggers = [
-  { char: '@', items: projects, dataPart: (item) => ({ type: 'data', dataType: 'project_ref', projectId: item.id }) },
+  { char: '@', items: projects, dataPart: (item) => ({ dataType: 'project_ref', projectId: item.id }) },
   { char: '#', items: tags, schema: { type: 'tag_ref', mapping: { tagId: 'id', tagName: 'label' } } },
   { char: '/', mode: 'command', items: commands, onSelect: (item) => handleCommand(item) },
 ]
@@ -153,6 +153,7 @@ const triggers = [
 | `maxHeight` | `string` | `'200px'` | 输入框最大高度 |
 | `submitOnEnter` | `boolean` | `true` | 是否 Enter 键提交 |
 | `popupMode` | `'fixed' \| 'cursor'` | `'fixed'` | 弹窗定位模式 |
+| `teleport` | `boolean` | `true` | 是否将下拉列表 teleport 到 `<body>` |
 
 ## 事件
 
@@ -170,6 +171,8 @@ const triggers = [
 | `#empty` | `{ query }` | 无匹配结果提示 |
 | `#loading` | `{}` | 加载中提示 |
 | `#actions` | `{ submit, clear, isEmpty }` | 自定义底部操作栏 |
+| `#inner-actions` | `{ submit, clear, isEmpty }` | 编辑器内部、输入框下方（如发送按钮） |
+| `#default` | `{ submit, clear, isEmpty, focus, getParts }` | 最外层底部，自由放置内容 |
 
 ## 暴露方法
 

@@ -14,6 +14,7 @@ Lightweight Vue 3 mention input component for AI chat scenarios. Zero dependenci
 - **Command mode** — `/slash` commands that trigger callbacks without inserting entities
 - **IME compatible** — Correct handling of Chinese / Japanese / Korean input
 - **Serialization & deserialization** — `getDataParts()` for submission, `setContent()` for editing saved messages
+- **Teleport dropdown** — Dropdown teleports to `<body>` by default, avoiding `overflow: hidden` clipping
 - **Cursor-following popup** — Optional `popupMode="cursor"` for popup that follows the caret
 - **Zero dependencies** — Only Vue 3 as peer dependency
 
@@ -44,7 +45,6 @@ const triggers = [
       { id: '2', label: 'Project Beta' },
     ],
     dataPart: (item) => ({
-      type: 'data',
       dataType: 'project_ref',
       projectId: item.id,
       projectName: item.label,
@@ -84,7 +84,7 @@ const {
     {
       char: '@',
       items: (q) => projects.filter(p => p.label.includes(q)),
-      dataPart: (item) => ({ type: 'data', dataType: 'project_ref', projectId: item.id }),
+      dataPart: (item) => ({ dataType: 'project_ref', projectId: item.id }),
     },
   ],
 })
@@ -113,7 +113,7 @@ interface MentionTrigger {
   mode?: 'inline' | 'command'     // Default 'inline'
   items: MentionItem[]            // Static array
     | ((query: string) => MentionItem[] | Promise<MentionItem[]>)  // or function
-  debounce?: number               // Async debounce ms, default 300
+  debounce?: number               // Async debounce ms, default 0
   dataPart?: (item) => Record<string, any>  // Output transformer
   schema?: { type: string; mapping: Record<string, string> }  // Declarative mapping
   onSelect?: (item) => void       // Command mode callback
@@ -124,7 +124,7 @@ interface MentionTrigger {
 
 ```ts
 const triggers = [
-  { char: '@', items: projects, dataPart: (item) => ({ type: 'data', dataType: 'project_ref', projectId: item.id }) },
+  { char: '@', items: projects, dataPart: (item) => ({ dataType: 'project_ref', projectId: item.id }) },
   { char: '#', items: tags, schema: { type: 'tag_ref', mapping: { tagId: 'id', tagName: 'label' } } },
   { char: '/', mode: 'command', items: commands, onSelect: (item) => handleCommand(item) },
 ]
@@ -153,6 +153,7 @@ const triggers = [
 | `maxHeight` | `string` | `'200px'` | Max editor height |
 | `submitOnEnter` | `boolean` | `true` | Submit on Enter |
 | `popupMode` | `'fixed' \| 'cursor'` | `'fixed'` | Popup positioning mode |
+| `teleport` | `boolean` | `true` | Teleport dropdown to `<body>` |
 
 ## Events
 
@@ -170,6 +171,8 @@ const triggers = [
 | `#empty` | `{ query }` | No results |
 | `#loading` | `{}` | Loading state |
 | `#actions` | `{ submit, clear, isEmpty }` | Custom action bar |
+| `#inner-actions` | `{ submit, clear, isEmpty }` | Inside editor area, below the input (e.g. send button) |
+| `#default` | `{ submit, clear, isEmpty, focus, getParts }` | Bottom of wrapper, free-form content |
 
 ## Exposed Methods
 
