@@ -1,3 +1,4 @@
+export { version } from './version'
 export { useMention } from './useMention'
 export { default as MentionInput } from './MentionInput.vue'
 export { default as MentionList } from './MentionList.vue'

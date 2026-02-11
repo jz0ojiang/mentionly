@@ -176,15 +176,26 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
   function updateCursorPosition() {
     const editor = editorRef.value
     if (!editor) return
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return
-    const range = sel.getRangeAt(0).cloneRange()
-    range.collapse(true)
-    const rect = range.getBoundingClientRect()
-    const editorRect = editor.getBoundingClientRect()
-    popupPosition.value = {
-      top: rect.top - editorRect.top,
-      left: rect.left - editorRect.left,
+
+    const popupMode = options.popupMode ?? 'fixed'
+
+    if (popupMode === 'fixed') {
+      const editorRect = editor.getBoundingClientRect()
+      popupPosition.value = {
+        top: editorRect.top,
+        left: editorRect.left,
+        width: editorRect.width,
+      }
+    } else {
+      const sel = window.getSelection()
+      if (!sel || sel.rangeCount === 0) return
+      const range = sel.getRangeAt(0).cloneRange()
+      range.collapse(true)
+      const rect = range.getBoundingClientRect()
+      popupPosition.value = {
+        top: rect.top,
+        left: rect.left,
+      }
     }
   }
 

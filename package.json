@@ -1,6 +1,6 @@
 {
   "name": "mentionly",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Lightweight Vue 3 mention input component for AI chat scenarios",
   "main": "./dist/index.cjs",

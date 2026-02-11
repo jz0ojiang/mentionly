@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { watch, ref } from 'vue'
 import type { MentionItem } from './types'
 
-defineProps<{
+const props = defineProps<{
   items: MentionItem[]
   activeIndex: number
   loading: boolean
@@ -17,10 +18,21 @@ defineSlots<{
   empty?: (props: { query: string }) => any
   loading?: (props: {}) => any
 }>()
+
+const listRef = ref<HTMLElement | null>(null)
+
+watch(() => props.activeIndex, () => {
+  const container = listRef.value
+  if (!container) return
+  const active = container.querySelector('.mentionly-list-item--active') as HTMLElement | null
+  if (active) {
+    active.scrollIntoView({ block: 'nearest' })
+  }
+}, { flush: 'post' })
 </script>
 
 <template>
-  <div class="mentionly-list" role="listbox">
+  <div ref="listRef" class="mentionly-list" role="listbox">
     <slot v-if="loading" name="loading">
       <div class="mentionly-list-loading">Loading...</div>
     </slot>

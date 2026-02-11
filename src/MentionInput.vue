@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 import type { MentionTrigger, ContentPart, DataPart, MentionItem, PopupMode } from './types'
 import { useMention } from './useMention'
 import MentionList from './MentionList.vue'
@@ -12,6 +12,7 @@ const props = withDefaults(
     maxHeight?: string
     submitOnEnter?: boolean
     popupMode?: PopupMode
+    teleport?: boolean
   }>(),
   {
     placeholder: '',
@@ -19,6 +20,7 @@ const props = withDefaults(
     maxHeight: '200px',
     submitOnEnter: true,
     popupMode: 'fixed',
+    teleport: true,
   },
 )
 
@@ -37,10 +39,22 @@ defineSlots<{
   item?: (props: { item: MentionItem; active: boolean; select: () => void }) => any
   empty?: (props: { query: string }) => any
   loading?: (props: {}) => any
+  'inner-actions'?: (props: {
+    submit: () => void
+    clear: () => void
+    isEmpty: boolean
+  }) => any
   actions?: (props: {
     submit: () => void
     clear: () => void
     isEmpty: boolean
+  }) => any
+  default?: (props: {
+    submit: () => void
+    clear: () => void
+    isEmpty: boolean
+    focus: () => void
+    getParts: () => ContentPart[]
   }) => any
 }>()
 
@@ -102,6 +116,33 @@ function handleSubmit() {
   clear()
 }
 
+const dropdownStyle = computed(() => {
+  const pos = popupPosition.value
+  if (props.popupMode === 'cursor') {
+    return {
+      position: 'fixed' as const,
+      top: pos.top + 'px',
+      left: pos.left + 'px',
+      transform: 'translateY(-100%)',
+      marginTop: '-4px',
+      width: 'max-content',
+      minWidth: '200px',
+      maxWidth: '320px',
+      zIndex: 9999,
+    }
+  }
+  // fixed mode: 下拉框在编辑器正上方，宽度与编辑器一致
+  return {
+    position: 'fixed' as const,
+    top: pos.top + 'px',
+    left: pos.left + 'px',
+    transform: 'translateY(-100%)',
+    marginTop: '-4px',
+    width: (pos.width ?? 0) + 'px',
+    zIndex: 9999,
+  }
+})
+
 defineExpose({
   getParts,
   getDataParts,
@@ -128,11 +169,16 @@ defineExpose({
         v-on="wrappedHandlers"
       />
 
-      <!-- 下拉列表 -->
+      <!-- 输入框内部操作区 -->
+      <slot name="inner-actions" :submit="handleSubmit" :clear="clear" :is-empty="isEmpty" />
+    </div>
+
+    <!-- Teleport 下拉列表到 body -->
+    <Teleport to="body" :disabled="!teleport">
       <div
         v-if="isOpen"
-        :class="['mentionly-dropdown', popupMode === 'cursor' ? 'mentionly-dropdown--cursor' : 'mentionly-dropdown--fixed']"
-        :style="popupMode === 'cursor' ? { top: popupPosition.top + 'px', left: popupPosition.left + 'px' } : undefined"
+        class="mentionly-dropdown"
+        :style="dropdownStyle"
       >
         <slot
           name="list"
@@ -160,11 +206,13 @@ defineExpose({
           </MentionList>
         </slot>
       </div>
-    </div>
+    </Teleport>
 
     <!-- 操作栏 -->
-    <slot name="actions" :submit="handleSubmit" :clear="clear" :is-empty="isEmpty">
-    </slot>
+    <slot name="actions" :submit="handleSubmit" :clear="clear" :is-empty="isEmpty" />
+
+    <!-- 兜底 slot -->
+    <slot :submit="handleSubmit" :clear="clear" :is-empty="isEmpty" :focus="focus" :get-parts="getParts" />
   </div>
 </template>
 
@@ -222,23 +270,9 @@ defineExpose({
 }
 
 /* ── Dropdown ── */
-.mentionly-dropdown--fixed {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  margin-bottom: 4px;
-  z-index: 50;
-}
-
-.mentionly-dropdown--cursor {
-  position: absolute;
-  z-index: 50;
-  transform: translateY(-100%);
-  margin-top: -4px;
-  width: max-content;
-  min-width: 200px;
-  max-width: 320px;
+.mentionly-dropdown {
+  position: fixed;
+  z-index: 9999;
 }
 
 .mentionly-list {
@@ -249,6 +283,26 @@ defineExpose({
   max-height: 200px;
   overflow-y: auto;
   padding: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+.mentionly-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mentionly-list::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.mentionly-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.mentionly-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 .mentionly-list-item {

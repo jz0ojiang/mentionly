@@ -82,6 +82,7 @@ export type PopupMode = 'fixed' | 'cursor'
 export interface PopupPosition {
   top: number
   left: number
+  width?: number
 }
 
 /** useMention 配置选项 */

@@ -1,21 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { MentionInput } from 'mentionly'
-import type { MentionTrigger, DataPart, ContentPart, PopupMode } from 'mentionly'
+import { ref, computed } from 'vue'
+import { MentionInput, version } from 'mentionly'
+import type { DataPart, ContentPart, PopupMode, MentionItem } from 'mentionly'
 
 const inputRef = ref()
 const output = ref<DataPart[]>([])
 const popupMode = ref<PopupMode>('cursor')
-const triggers: MentionTrigger[] = [
+
+// 自定义 @ 数据源
+const customAtInput = ref('Project Alpha, Project Beta, Project Gamma')
+const customAtItems = computed<MentionItem[]>(() => {
+  return customAtInput.value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((label, i) => ({ id: String(i + 1), label }))
+})
+
+const triggers = computed(() => [
   {
     char: '@',
-    items: [
-      { id: '1', label: 'Project Alpha', desc: '前端项目' },
-      { id: '2', label: 'Project Beta', desc: '后端服务' },
-      { id: '3', label: 'Project Gamma', desc: '数据平台' },
-    ],
-    dataPart: (item) => ({
-      type: 'data',
+    items: customAtItems.value,
+    dataPart: (item: MentionItem) => ({
+      type: 'data' as const,
       dataType: 'project_ref',
       projectId: item.id,
       projectName: item.label,
@@ -35,12 +42,12 @@ const triggers: MentionTrigger[] = [
   },
   {
     char: '/',
-    mode: 'command',
+    mode: 'command' as const,
     items: [
       { id: 'clear', label: 'clear', desc: '清空输入' },
       { id: 'help', label: 'help', desc: '查看帮助' },
     ],
-    onSelect: (item) => {
+    onSelect: (item: MentionItem) => {
       if (item.id === 'clear') {
         inputRef.value?.clear()
       }
@@ -49,7 +56,7 @@ const triggers: MentionTrigger[] = [
       }
     },
   },
-]
+])
 
 function onSubmit(parts: DataPart[]) {
   output.value = parts
@@ -74,7 +81,7 @@ function loadSaved() {
 
 <template>
   <div class="playground">
-    <h1>Mentionly Playground</h1>
+    <h1>Mentionly Playground <span class="version">v{{ version }}</span></h1>
     <p class="hint">
       输入 <code>@</code> mention 项目，<code>#</code> mention 标签，<code>/</code> 执行命令
     </p>
@@ -89,6 +96,14 @@ function loadSaved() {
       </label>
     </div>
 
+    <div class="custom-at">
+      <label>
+        <span>自定义 @ 数据源（逗号分隔）：</span>
+        <input v-model="customAtInput" class="custom-at-input" placeholder="Project Alpha, Project Beta, ..." />
+      </label>
+      <p class="custom-at-preview">当前项：{{ customAtItems.map(i => i.label).join('、') || '（空）' }}</p>
+    </div>
+
     <div class="input-area">
       <MentionInput
         ref="inputRef"
@@ -97,7 +112,22 @@ function loadSaved() {
         placeholder="输入消息... 试试 @ # /"
         @submit="onSubmit"
         @change="onChange"
-      />
+      >
+        <template #inner-actions="{ submit, isEmpty }">
+          <div class="inner-actions">
+            <button class="send-btn" :disabled="isEmpty" @click="submit">
+              发送
+            </button>
+          </div>
+        </template>
+
+        <template #default="{ isEmpty: empty, focus: focusFn }">
+          <div class="extra-info">
+            <span>{{ empty ? '等待输入...' : '编辑中' }}</span>
+            <button class="focus-btn" @click="focusFn">聚焦编辑器</button>
+          </div>
+        </template>
+      </MentionInput>
     </div>
 
     <div class="actions">
@@ -135,6 +165,15 @@ body {
 h1 {
   font-size: 24px;
   margin-bottom: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.version {
+  font-size: 13px;
+  font-weight: 400;
+  color: #9ca3af;
 }
 
 .hint {
@@ -215,5 +254,82 @@ h1 {
   border-radius: 6px;
   overflow-x: auto;
   line-height: 1.5;
+}
+
+.inner-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px 8px;
+}
+
+.send-btn {
+  padding: 4px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #3b82f6;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.extra-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.focus-btn {
+  padding: 2px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.custom-at {
+  margin-bottom: 16px;
+}
+
+.custom-at label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.custom-at-input {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  width: 100%;
+}
+
+.custom-at-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.custom-at-preview {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9ca3af;
 }
 </style>
