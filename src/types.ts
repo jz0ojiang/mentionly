@@ -32,7 +32,7 @@ export interface MentionTrigger {
     | MentionItem[]
     | ((query: string) => MentionItem[] | Promise<MentionItem[]>)
 
-  /** 异步数据源的防抖时间（ms），默认 300 */
+  /** 异步数据源的防抖时间（ms），默认 0（无防抖） */
   debounce?: number
 
   /**

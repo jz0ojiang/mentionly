@@ -271,7 +271,6 @@ defineExpose({
 
 /* ── Dropdown ── */
 .mentionly-dropdown {
-  position: fixed;
   z-index: 9999;
 }
 

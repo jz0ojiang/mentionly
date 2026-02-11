@@ -22,7 +22,6 @@ const triggers = computed(() => [
     char: '@',
     items: customAtItems.value,
     dataPart: (item: MentionItem) => ({
-      type: 'data' as const,
       dataType: 'project_ref',
       projectId: item.id,
       projectName: item.label,

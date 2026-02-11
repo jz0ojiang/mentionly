@@ -93,6 +93,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
       loading.value = true
       debounceTimer = setTimeout(() => resolveItems(items, q, version), debounceMs)
     } else {
+      loading.value = true
       resolveItems(items, q, version)
     }
   }
@@ -295,6 +296,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     sel.removeAllRanges()
     sel.addRange(range)
     bumpVersion()
+    detectTrigger()
   }
 
   let blurTimer: ReturnType<typeof setTimeout> | null = null
