@@ -1,0 +1,37 @@
+# dependencies
+node_modules
+
+# build output
+dist
+out
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+*.log
+
+# env
+.env
+.env*.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# editors & IDEs
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# design docs (not part of the package)
+mention-input-prompt.md
