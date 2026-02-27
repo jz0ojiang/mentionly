@@ -14,7 +14,13 @@
     },
     "./style.css": "./dist/mentionly.css"
   },
-  "files": ["dist"],
+  "files": ["dist", "README.zh.md"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jz0ojiang/mentionly.git"
+  },
+  "homepage": "https://im0o.top/mentionly",
+  "bugs": "https://github.com/jz0ojiang/mentionly/issues",
   "scripts": {
     "dev": "vite --config vite.config.ts playground",
     "build": "vite build",

@@ -2,7 +2,7 @@
 
 Lightweight Vue 3 mention input component for AI chat scenarios. Zero dependencies (only peer depends on Vue 3).
 
-[中文文档](./README.zh.md)
+[Live Demo](https://im0o.top/mentionly) | [中文文档](./README.zh.md)
 
 ## Features
 

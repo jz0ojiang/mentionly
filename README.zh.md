@@ -2,7 +2,7 @@
 
 轻量级 Vue 3 mention 输入组件，专为 AI 聊天场景设计。零外部依赖（仅 peer depend Vue 3）。
 
-[English](./README.md)
+[在线演示](https://im0o.top/mentionly) | [English](./README.md)
 
 ## 特性
 
