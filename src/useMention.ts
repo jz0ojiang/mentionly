@@ -32,6 +32,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
 
   // ── 内部状态 ──
   let isComposing = false
+  let isPasting = false
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let asyncVersion = 0
   // 用于驱动 isEmpty computed 重新计算
@@ -42,7 +43,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
   function getTriggers() { return options.triggers }
   // ── 触发检测（用 lastIndexOf 替代正则，更简洁健壮） ──
   function detectTrigger() {
-    if (isComposing) return
+    if (isComposing || isPasting) return
 
     const info = getTextBeforeCursor()
     if (!info) { close(); return }
@@ -126,52 +127,43 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     if (!trigger) return
 
     if (trigger.mode === 'command') {
-      removeTriggerText(trigger.char)
+      selectTriggerText(trigger.char)
+      document.execCommand('delete')
       trigger.onSelect?.(item)
       close()
       bumpVersion()
       return
     }
 
-    removeTriggerText(trigger.char)
+    // 选中触发文本，用 execCommand('insertHTML') 替换为 mention span
+    // 这样整个操作进入浏览器 undo 栈，Ctrl+Z 可撤销
+    if (!selectTriggerText(trigger.char)) return
     const span = createMentionSpan(trigger.char, item)
-    insertNodeAtCursor(span)
-
-    if (options.insertSpaceAfter !== false) {
-      insertNodeAtCursor(document.createTextNode('\u00A0'))
-    }
+    const suffix = options.insertSpaceAfter !== false ? '\u00A0' : ''
+    document.execCommand('insertHTML', false, span.outerHTML + suffix)
 
     close()
     bumpVersion()
     editor.focus()
   }
 
-  function removeTriggerText(triggerChar: string) {
+  /** 选中触发文本（不删除），返回是否成功 */
+  function selectTriggerText(triggerChar: string): boolean {
     const info = getTextBeforeCursor()
-    if (!info) return
+    if (!info) return false
 
     const { text, node, offset } = info
     const idx = text.lastIndexOf(triggerChar)
-    if (idx === -1) return
+    if (idx === -1) return false
 
     const sel = window.getSelection()
-    if (!sel) return
+    if (!sel) return false
     const range = document.createRange()
     range.setStart(node, idx)
     range.setEnd(node, offset)
-    range.deleteContents()
-  }
-
-  function insertNodeAtCursor(newNode: Node) {
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return
-    const range = sel.getRangeAt(0)
-    range.collapse(false)
-    range.insertNode(newNode)
-    range.setStartAfter(newNode)
-    range.setEndAfter(newNode)
     sel.removeAllRanges()
     sel.addRange(range)
+    return true
   }
 
   function updateCursorPosition() {
@@ -284,19 +276,9 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     e.preventDefault()
     const text = e.clipboardData?.getData('text/plain') ?? ''
     if (!text) return
-    // 用 Range API 替代废弃的 document.execCommand
-    const sel = window.getSelection()
-    if (!sel || sel.rangeCount === 0) return
-    const range = sel.getRangeAt(0)
-    range.deleteContents()
-    const textNode = document.createTextNode(text)
-    range.insertNode(textNode)
-    range.setStartAfter(textNode)
-    range.setEndAfter(textNode)
-    sel.removeAllRanges()
-    sel.addRange(range)
-    bumpVersion()
-    detectTrigger()
+    isPasting = true
+    document.execCommand('insertText', false, text)
+    isPasting = false
   }
 
   let blurTimer: ReturnType<typeof setTimeout> | null = null

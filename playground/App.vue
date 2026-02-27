@@ -258,7 +258,7 @@ h1 {
 .inner-actions {
   display: flex;
   justify-content: flex-end;
-  padding: 4px 8px 8px;
+  padding: 8px 8px 8px;
 }
 
 .send-btn {
