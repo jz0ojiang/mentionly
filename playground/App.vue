@@ -7,6 +7,71 @@ const inputRef = ref()
 const output = ref<DataPart[]>([])
 const popupMode = ref<PopupMode>('cursor')
 
+// ── i18n ──
+type Locale = 'en' | 'zh'
+const urlLang = new URLSearchParams(window.location.search).get('lang')
+const defaultLocale: Locale = urlLang === 'zh' || urlLang === 'en' ? urlLang : navigator.language.startsWith('zh') ? 'zh' : 'en'
+const locale = ref<Locale>(defaultLocale)
+
+const i18n = {
+  en: {
+    hint: ['Type ', ' to mention projects, ', ' to mention tags, ', ' to run commands'],
+    popupMode: 'Popup mode:',
+    popupFixed: 'fixed (above editor)',
+    popupCursor: 'cursor (follow caret)',
+    customAt: 'Custom @ data source (comma separated):',
+    customAtPreview: (items: string) => `Current items: ${items || '(empty)'}`,
+    placeholder: 'Type a message... try @ # /',
+    send: 'Send',
+    waiting: 'Waiting for input...',
+    editing: 'Editing',
+    focusEditor: 'Focus editor',
+    loadSaved: 'Load saved',
+    focus: 'Focus',
+    clear: 'Clear',
+    tagBug: 'Bug',
+    tagFeature: 'Feature',
+    tagRefactor: 'Refactor',
+    cmdClear: 'Clear input',
+    cmdHelp: 'Show help',
+    helpMsg: 'Mentionly Playground — Type @ or # to trigger mention',
+    savedParts: [
+      { type: 'text', content: 'Check ' },
+      { type: 'mention', triggeredBy: '@', id: '1', label: 'Project Alpha' },
+      { type: 'text', content: ' deployment status' },
+    ] as ContentPart[],
+  },
+  zh: {
+    hint: ['输入 ', ' mention 项目，', ' mention 标签，', ' 执行命令'],
+    popupMode: '弹出模式：',
+    popupFixed: 'fixed（固定在编辑器上方）',
+    popupCursor: 'cursor（跟随光标）',
+    customAt: '自定义 @ 数据源（逗号分隔）：',
+    customAtPreview: (items: string) => `当前项：${items || '（空）'}`,
+    placeholder: '输入消息... 试试 @ # /',
+    send: '发送',
+    waiting: '等待输入...',
+    editing: '编辑中',
+    focusEditor: '聚焦编辑器',
+    loadSaved: '加载已保存内容',
+    focus: '聚焦',
+    clear: '清空',
+    tagBug: '缺陷',
+    tagFeature: '新功能',
+    tagRefactor: '重构',
+    cmdClear: '清空输入',
+    cmdHelp: '查看帮助',
+    helpMsg: 'Mentionly Playground - 输入 @ 或 # 触发 mention',
+    savedParts: [
+      { type: 'text', content: '请检查 ' },
+      { type: 'mention', triggeredBy: '@', id: '1', label: 'Project Alpha' },
+      { type: 'text', content: ' 的部署状态' },
+    ] as ContentPart[],
+  },
+} as const
+
+const t = computed(() => i18n[locale.value])
+
 // 自定义 @ 数据源
 const customAtInput = ref('Project Alpha, Project Beta, Project Gamma')
 const customAtItems = computed<MentionItem[]>(() => {
@@ -30,9 +95,9 @@ const triggers = computed(() => [
   {
     char: '#',
     items: [
-      { id: 't1', label: 'bug', desc: '缺陷' },
-      { id: 't2', label: 'feature', desc: '新功能' },
-      { id: 't3', label: 'refactor', desc: '重构' },
+      { id: 't1', label: 'bug', desc: t.value.tagBug },
+      { id: 't2', label: 'feature', desc: t.value.tagFeature },
+      { id: 't3', label: 'refactor', desc: t.value.tagRefactor },
     ],
     schema: {
       type: 'tag_ref',
@@ -43,15 +108,15 @@ const triggers = computed(() => [
     char: '/',
     mode: 'command' as const,
     items: [
-      { id: 'clear', label: 'clear', desc: '清空输入' },
-      { id: 'help', label: 'help', desc: '查看帮助' },
+      { id: 'clear', label: 'clear', desc: t.value.cmdClear },
+      { id: 'help', label: 'help', desc: t.value.cmdHelp },
     ],
     onSelect: (item: MentionItem) => {
       if (item.id === 'clear') {
         inputRef.value?.clear()
       }
       if (item.id === 'help') {
-        alert('Mentionly Playground - 输入 @ 或 # 触发 mention')
+        alert(t.value.helpMsg)
       }
     },
   },
@@ -67,40 +132,39 @@ function onChange(parts: ContentPart[]) {
 }
 
 // 反序列化测试
-const savedParts: ContentPart[] = [
-  { type: 'text', content: '请检查 ' },
-  { type: 'mention', triggeredBy: '@', id: '1', label: 'Project Alpha' },
-  { type: 'text', content: ' 的部署状态' },
-]
-
 function loadSaved() {
-  inputRef.value?.setContent(savedParts)
+  inputRef.value?.setContent(t.value.savedParts)
 }
 </script>
 
 <template>
   <div class="playground">
-    <h1>Mentionly Playground <span class="version">v{{ version }}</span></h1>
+    <div class="header">
+      <h1>Mentionly Playground <span class="version">v{{ version }}</span></h1>
+      <button class="lang-btn" @click="locale = locale === 'en' ? 'zh' : 'en'">
+        {{ locale === 'en' ? '中文' : 'EN' }}
+      </button>
+    </div>
     <p class="hint">
-      输入 <code>@</code> mention 项目，<code>#</code> mention 标签，<code>/</code> 执行命令
+      {{ t.hint[0] }}<code>@</code>{{ t.hint[1] }}<code>#</code>{{ t.hint[2] }}<code>/</code>{{ t.hint[3] }}
     </p>
 
     <div class="mode-switch">
       <label>
-        <span>弹出模式：</span>
+        <span>{{ t.popupMode }}</span>
         <select v-model="popupMode">
-          <option value="fixed">fixed（固定在编辑器上方）</option>
-          <option value="cursor">cursor（跟随光标）</option>
+          <option value="fixed">{{ t.popupFixed }}</option>
+          <option value="cursor">{{ t.popupCursor }}</option>
         </select>
       </label>
     </div>
 
     <div class="custom-at">
       <label>
-        <span>自定义 @ 数据源（逗号分隔）：</span>
+        <span>{{ t.customAt }}</span>
         <input v-model="customAtInput" class="custom-at-input" placeholder="Project Alpha, Project Beta, ..." />
       </label>
-      <p class="custom-at-preview">当前项：{{ customAtItems.map(i => i.label).join('、') || '（空）' }}</p>
+      <p class="custom-at-preview">{{ t.customAtPreview(customAtItems.map(i => i.label).join(locale === 'zh' ? '、' : ', ')) }}</p>
     </div>
 
     <div class="input-area">
@@ -108,31 +172,31 @@ function loadSaved() {
         ref="inputRef"
         :triggers="triggers"
         :popup-mode="popupMode"
-        placeholder="输入消息... 试试 @ # /"
+        :placeholder="t.placeholder"
         @submit="onSubmit"
         @change="onChange"
       >
         <template #inner-actions="{ submit, isEmpty }">
           <div class="inner-actions">
             <button class="send-btn" :disabled="isEmpty" @click="submit">
-              发送
+              {{ t.send }}
             </button>
           </div>
         </template>
 
         <template #default="{ isEmpty: empty, focus: focusFn }">
           <div class="extra-info">
-            <span>{{ empty ? '等待输入...' : '编辑中' }}</span>
-            <button class="focus-btn" @click="focusFn">聚焦编辑器</button>
+            <span>{{ empty ? t.waiting : t.editing }}</span>
+            <button class="focus-btn" @click="focusFn">{{ t.focusEditor }}</button>
           </div>
         </template>
       </MentionInput>
     </div>
 
     <div class="actions">
-      <button @click="loadSaved">加载已保存内容</button>
-      <button @click="inputRef?.focus()">聚焦</button>
-      <button @click="inputRef?.clear()">清空</button>
+      <button @click="loadSaved">{{ t.loadSaved }}</button>
+      <button @click="inputRef?.focus()">{{ t.focus }}</button>
+      <button @click="inputRef?.clear()">{{ t.clear }}</button>
     </div>
 
     <div v-if="output.length" class="output">
@@ -163,10 +227,32 @@ body {
 
 h1 {
   font-size: 24px;
-  margin-bottom: 8px;
   display: flex;
   align-items: baseline;
   gap: 8px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.lang-btn {
+  padding: 2px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: all 0.15s;
+}
+
+.lang-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .version {
