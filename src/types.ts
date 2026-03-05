@@ -38,7 +38,7 @@ export interface MentionTrigger {
   /**
    * 自定义此触发器产生的 DataPart 结构（方式一：transformer 函数）
    * @example
-   * dataPart: (item) => ({ type: 'project_ref', projectId: item.id, name: item.label })
+   * dataPart: (item) => ({ type: 'mentioned_ref', projectId: item.id, name: item.label })
    */
   dataPart?: (item: MentionItem) => Record<string, any>
 
@@ -46,7 +46,7 @@ export interface MentionTrigger {
    * 声明式 schema 映射（方式二：简单场景的语法糖）
    * 如果同时提供了 dataPart 函数，dataPart 函数优先
    * @example
-   * schema: { type: 'project_ref', mapping: { projectId: 'id', name: 'label' } }
+   * schema: { type: 'mentioned_ref', mapping: { projectId: 'id', name: 'label' } }
    */
   schema?: {
     type: string
@@ -78,6 +78,9 @@ export type DataPart =
 /** 弹出列表定位模式 */
 export type PopupMode = 'fixed' | 'cursor'
 
+/** 滚动时弹窗行为 */
+export type PopupScrollBehavior = 'reposition' | 'close' | 'ignore'
+
 /** 光标坐标 */
 export interface PopupPosition {
   top: number
@@ -99,6 +102,14 @@ export interface UseMentionOptions {
    * - 'cursor': 跟随光标位置弹出
    */
   popupMode?: PopupMode
+
+  /**
+   * 滚动时弹窗行为
+   * - 'reposition': 重新计算位置（默认）
+   * - 'close': 关闭弹窗
+   * - 'ignore': 不处理
+   */
+  popupScrollBehavior?: PopupScrollBehavior
 }
 
 /** useMention 返回值 */

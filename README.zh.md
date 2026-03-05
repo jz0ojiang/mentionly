@@ -45,7 +45,7 @@ const triggers = [
       { id: '2', label: 'Project Beta' },
     ],
     dataPart: (item) => ({
-      dataType: 'project_ref',
+      dataType: 'mentioned_ref',
       projectId: item.id,
       projectName: item.label,
     }),
@@ -55,7 +55,7 @@ function onSubmit(dataParts) {
   console.log(dataParts)
   // [
   //   { type: 'text', text: '检查 ' },
-  //   { type: 'data', dataType: 'project_ref', projectId: '1', projectName: 'Project Alpha' },
+  //   { type: 'data', dataType: 'mentioned_ref', projectId: '1', projectName: 'Project Alpha' },
   //   { type: 'text', text: ' 的状态' },
   // ]
 }
@@ -84,7 +84,7 @@ const {
     {
       char: '@',
       items: (q) => projects.filter(p => p.label.includes(q)),
-      dataPart: (item) => ({ dataType: 'project_ref', projectId: item.id }),
+      dataPart: (item) => ({ dataType: 'mentioned_ref', projectId: item.id }),
     },
   ],
 })
@@ -124,7 +124,7 @@ interface MentionTrigger {
 
 ```ts
 const triggers = [
-  { char: '@', items: projects, dataPart: (item) => ({ dataType: 'project_ref', projectId: item.id }) },
+  { char: '@', items: projects, dataPart: (item) => ({ dataType: 'mentioned_ref', projectId: item.id }) },
   { char: '#', items: tags, schema: { type: 'tag_ref', mapping: { tagId: 'id', tagName: 'label' } } },
   { char: '/', mode: 'command', items: commands, onSelect: (item) => handleCommand(item) },
 ]
@@ -152,7 +152,9 @@ const triggers = [
 | `disabled` | `boolean` | `false` | 是否禁用 |
 | `maxHeight` | `string` | `'200px'` | 输入框最大高度 |
 | `submitOnEnter` | `boolean` | `true` | 是否 Enter 键提交 |
+| `onEnter` | `(e: KeyboardEvent) => void` | `-` | Enter 时触发（提交前），可 `e.preventDefault()` 阻止提交/换行 |
 | `popupMode` | `'fixed' \| 'cursor'` | `'fixed'` | 弹窗定位模式 |
+| `popupScrollBehavior` | `'reposition' \| 'close' \| 'ignore'` | `'reposition'` | 滚动时弹窗处理方式 |
 | `teleport` | `boolean` | `true` | 是否将下拉列表 teleport 到 `<body>` |
 
 ## 事件

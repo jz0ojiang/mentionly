@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, computed } from 'vue'
-import type { MentionTrigger, ContentPart, DataPart, MentionItem, PopupMode } from './types'
+import type { MentionTrigger, ContentPart, DataPart, MentionItem, PopupMode, PopupScrollBehavior } from './types'
 import { useMention } from './useMention'
 import MentionList from './MentionList.vue'
 
@@ -11,7 +11,9 @@ const props = withDefaults(
     disabled?: boolean
     maxHeight?: string
     submitOnEnter?: boolean
+    onEnter?: (e: KeyboardEvent) => void
     popupMode?: PopupMode
+    popupScrollBehavior?: PopupScrollBehavior
     teleport?: boolean
   }>(),
   {
@@ -20,6 +22,7 @@ const props = withDefaults(
     maxHeight: '200px',
     submitOnEnter: true,
     popupMode: 'fixed',
+    popupScrollBehavior: 'reposition',
     teleport: true,
   },
 )
@@ -80,6 +83,7 @@ const {
 } = useMention(reactive({
   get triggers() { return props.triggers },
   get popupMode() { return props.popupMode },
+  get popupScrollBehavior() { return props.popupScrollBehavior },
 }))
 
 // 包装 handlers，添加 submit 和 change 逻辑
@@ -96,11 +100,16 @@ const wrappedHandlers = {
       if (e.defaultPrevented) return
     }
 
-    // Enter 提交
-    if (e.key === 'Enter' && !e.shiftKey && props.submitOnEnter) {
-      e.preventDefault()
-      handleSubmit()
-      return
+    if (e.key === 'Enter' && !e.shiftKey) {
+      props.onEnter?.(e)
+      if (e.defaultPrevented) return
+
+      // Enter 提交
+      if (props.submitOnEnter) {
+        e.preventDefault()
+        handleSubmit()
+        return
+      }
     }
 
     if (!isOpen.value) {

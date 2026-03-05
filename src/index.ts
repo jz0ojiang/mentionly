@@ -7,6 +7,7 @@ export type {
   MentionTrigger,
   TriggerMode,
   PopupMode,
+  PopupScrollBehavior,
   PopupPosition,
   ContentPart,
   DataPart,

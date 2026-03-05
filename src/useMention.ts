@@ -1,4 +1,4 @@
-import { ref, computed, onBeforeUnmount, type Ref } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
 import type {
   UseMentionOptions,
   UseMentionReturn,
@@ -192,6 +192,27 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     }
   }
 
+  let rafId: number | null = null
+  function schedulePopupPositionUpdate() {
+    if (!isOpen.value) return
+    if (rafId !== null) return
+    rafId = window.requestAnimationFrame(() => {
+      rafId = null
+      updateCursorPosition()
+    })
+  }
+
+  function handleViewportChange() {
+    if (!isOpen.value) return
+    const behavior = options.popupScrollBehavior ?? 'reposition'
+    if (behavior === 'ignore') return
+    if (behavior === 'close') {
+      close()
+      return
+    }
+    schedulePopupPositionUpdate()
+  }
+
   function close() {
     isOpen.value = false
     activeTrigger.value = null
@@ -335,7 +356,39 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     return text.trim().length === 0 && !editor.querySelector('[data-mention-id]')
   })
 
+  let listenersAttached = false
+  function syncViewportListeners() {
+    const behavior = options.popupScrollBehavior ?? 'reposition'
+    if (behavior === 'ignore') {
+      if (listenersAttached) {
+        window.removeEventListener('scroll', handleViewportChange, true)
+        window.removeEventListener('resize', handleViewportChange)
+        listenersAttached = false
+      }
+      return
+    }
+    if (!listenersAttached) {
+      window.addEventListener('scroll', handleViewportChange, true)
+      window.addEventListener('resize', handleViewportChange)
+      listenersAttached = true
+    }
+  }
+
+  onMounted(() => {
+    syncViewportListeners()
+  })
+
+  watch(() => options.popupScrollBehavior, () => {
+    syncViewportListeners()
+  })
+
   onBeforeUnmount(() => {
+    if (listenersAttached) {
+      window.removeEventListener('scroll', handleViewportChange, true)
+      window.removeEventListener('resize', handleViewportChange)
+      listenersAttached = false
+    }
+    if (rafId !== null) window.cancelAnimationFrame(rafId)
     if (debounceTimer) clearTimeout(debounceTimer)
     if (blurTimer) clearTimeout(blurTimer)
   })

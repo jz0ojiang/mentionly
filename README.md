@@ -45,7 +45,7 @@ const triggers = [
       { id: '2', label: 'Project Beta' },
     ],
     dataPart: (item) => ({
-      dataType: 'project_ref',
+      dataType: 'mentioned_ref',
       projectId: item.id,
       projectName: item.label,
     }),
@@ -55,7 +55,7 @@ function onSubmit(dataParts) {
   console.log(dataParts)
   // [
   //   { type: 'text', text: 'Check ' },
-  //   { type: 'data', dataType: 'project_ref', projectId: '1', projectName: 'Project Alpha' },
+  //   { type: 'data', dataType: 'mentioned_ref', projectId: '1', projectName: 'Project Alpha' },
   //   { type: 'text', text: ' status' },
   // ]
 }
@@ -84,7 +84,7 @@ const {
     {
       char: '@',
       items: (q) => projects.filter(p => p.label.includes(q)),
-      dataPart: (item) => ({ dataType: 'project_ref', projectId: item.id }),
+      dataPart: (item) => ({ dataType: 'mentioned_ref', projectId: item.id }),
     },
   ],
 })
@@ -124,7 +124,7 @@ interface MentionTrigger {
 
 ```ts
 const triggers = [
-  { char: '@', items: projects, dataPart: (item) => ({ dataType: 'project_ref', projectId: item.id }) },
+  { char: '@', items: projects, dataPart: (item) => ({ dataType: 'mentioned_ref', projectId: item.id }) },
   { char: '#', items: tags, schema: { type: 'tag_ref', mapping: { tagId: 'id', tagName: 'label' } } },
   { char: '/', mode: 'command', items: commands, onSelect: (item) => handleCommand(item) },
 ]
@@ -152,7 +152,9 @@ const triggers = [
 | `disabled` | `boolean` | `false` | Disable input |
 | `maxHeight` | `string` | `'200px'` | Max editor height |
 | `submitOnEnter` | `boolean` | `true` | Submit on Enter |
+| `onEnter` | `(e: KeyboardEvent) => void` | `-` | Called on Enter before submit; call `e.preventDefault()` to block submit/newline |
 | `popupMode` | `'fixed' \| 'cursor'` | `'fixed'` | Popup positioning mode |
+| `popupScrollBehavior` | `'reposition' \| 'close' \| 'ignore'` | `'reposition'` | Scroll behavior for popup |
 | `teleport` | `boolean` | `true` | Teleport dropdown to `<body>` |
 
 ## Events
