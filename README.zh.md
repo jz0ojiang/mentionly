@@ -1,5 +1,9 @@
 # mentionly
 
+[![tests](https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml/badge.svg)](https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml)
+[![npm](https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm)](https://www.npmjs.com/package/mentionly)
+[![downloads](https://img.shields.io/npm/dm/mentionly?color=10b981&label=downloads&logo=npm)](https://www.npmjs.com/package/mentionly)
+
 轻量级 Vue 3 mention 输入组件，专为 AI 聊天场景设计。零外部依赖（仅 peer depend Vue 3）。
 
 [在线演示](https://im0o.top/mentionly?lang=zh) | [English](./README.md)

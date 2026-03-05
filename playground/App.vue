@@ -101,6 +101,9 @@ function loadSaved() {
       </button>
     </div>
     <div class="header-actions">
+      <a class="badge" href="https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml" target="_blank" rel="noreferrer">
+        <img src="https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml/badge.svg" alt="tests" />
+      </a>
       <a class="badge" href="https://www.npmjs.com/package/mentionly" target="_blank" rel="noreferrer">
         <img src="https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm" alt="npm version" />
       </a>

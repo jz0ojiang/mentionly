@@ -1,5 +1,9 @@
 # mentionly
 
+[![tests](https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml/badge.svg)](https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml)
+[![npm](https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm)](https://www.npmjs.com/package/mentionly)
+[![downloads](https://img.shields.io/npm/dm/mentionly?color=10b981&label=downloads&logo=npm)](https://www.npmjs.com/package/mentionly)
+
 Lightweight Vue 3 mention input component for AI chat scenarios. Zero dependencies (only peer depends on Vue 3).
 
 [Live Demo](https://im0o.top/mentionly) | [中文文档](./README.zh.md)
