@@ -100,6 +100,17 @@ function loadSaved() {
         {{ locale === 'en' ? '中文' : 'EN' }}
       </button>
     </div>
+    <div class="header-actions">
+      <a class="badge" href="https://www.npmjs.com/package/mentionly" target="_blank" rel="noreferrer">
+        <img src="https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm" alt="npm version" />
+      </a>
+      <a class="badge" href="https://www.npmjs.com/package/mentionly" target="_blank" rel="noreferrer">
+        <img src="https://img.shields.io/npm/dm/mentionly?color=10b981&label=downloads&logo=npm" alt="npm downloads" />
+      </a>
+      <a class="badge" href="https://github.com/jz0ojiang/mentionly" target="_blank" rel="noreferrer">
+        <img src="https://img.shields.io/badge/GitHub-Repo-111827?logo=github" alt="github repo" />
+      </a>
+    </div>
     <p class="hint">
       {{ t.hint[0] }}<code>@</code>{{ t.hint[1] }}<code>#</code>{{ t.hint[2] }}<code>/</code>{{ t.hint[3] }}
     </p>
@@ -289,7 +300,34 @@ h1 {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.badge:hover {
+  opacity: 0.85;
+}
+
+.badge img {
+  height: 18px;
+  display: block;
 }
 
 .lang-btn {
@@ -321,7 +359,7 @@ h1 {
 }
 
 .section {
-  padding: 22px 0 26px;
+  padding: 18px 0 22px;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -352,7 +390,7 @@ h1 {
 
 .controls {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .usage-demo {
