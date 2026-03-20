@@ -192,8 +192,15 @@ inputRef.value.getDataParts()   // DataPart[]
 inputRef.value.getPlainText()   // string
 inputRef.value.clear()
 inputRef.value.setContent(parts)  // Restore from ContentPart[]
+inputRef.value.insertMention({
+  id: 'ctx-1',
+  label: 'Selection Context',
+  dataPart: (item) => ({ dataType: 'selection_ref', sourceId: item.id, title: item.label }),
+})
 inputRef.value.focus()
 ```
+
+`insertMention()` supports inserting custom atomic nodes even when they are not in any trigger list.
 
 ## Deserialization
 

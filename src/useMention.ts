@@ -7,6 +7,8 @@ import type {
   ContentPart,
   DataPart,
   PopupPosition,
+  InsertMentionPayload,
+  InsertMentionOptions,
 } from './types'
 import {
   createMentionSpan,
@@ -145,6 +147,60 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     close()
     bumpVersion()
     editor.focus()
+  }
+
+  function insertMention(payload: InsertMentionPayload, insertOptions: InsertMentionOptions = {}): boolean {
+    const editor = editorRef.value
+    if (!editor) return false
+
+    const trigger = payload.triggeredBy ?? ''
+    const mentionId = payload.id
+    const dataPart = typeof payload.dataPart === 'function'
+      ? payload.dataPart({ id: mentionId, label: payload.label, triggeredBy: trigger })
+      : payload.dataPart
+
+    if (insertOptions.focus !== false) {
+      editor.focus()
+    }
+
+    const selection = window.getSelection()
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null
+    const inEditor = range ? editor.contains(range.startContainer) : false
+    if (!inEditor) {
+      setCursorToEnd(editor)
+    }
+
+    const span = createMentionSpan(trigger, { id: mentionId, label: payload.label }, dataPart)
+    const shouldAppendSpace = insertOptions.appendSpace ?? true
+    const suffix = shouldAppendSpace ? '\u00A0' : ''
+    if (typeof document.execCommand === 'function') {
+      document.execCommand('insertHTML', false, span.outerHTML + suffix)
+    } else {
+      const sel = window.getSelection()
+      if (!sel || sel.rangeCount === 0) {
+        editor.appendChild(span)
+        if (suffix) editor.appendChild(document.createTextNode(suffix))
+        setCursorToEnd(editor)
+      } else {
+        const range = sel.getRangeAt(0)
+        range.deleteContents()
+        const trailing = suffix ? document.createTextNode(suffix) : null
+        const fragment = document.createDocumentFragment()
+        fragment.appendChild(span)
+        if (trailing) fragment.appendChild(trailing)
+        range.insertNode(fragment)
+
+        const cursorTarget = trailing ?? span
+        range.setStartAfter(cursorTarget)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
+    }
+
+    close()
+    bumpVersion()
+    return true
   }
 
   /** 选中触发文本（不删除），返回是否成功 */
@@ -403,6 +459,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     loading,
     popupPosition,
     select,
+    insertMention,
     close,
     getParts,
     getDataParts,

@@ -11,6 +11,8 @@ export type {
   PopupPosition,
   ContentPart,
   DataPart,
+  InsertMentionPayload,
+  InsertMentionOptions,
   UseMentionOptions,
   UseMentionReturn,
 } from './types'

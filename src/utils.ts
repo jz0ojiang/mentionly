@@ -4,11 +4,15 @@ import type { ContentPart, DataPart, MentionItem, MentionTrigger } from './types
 export function createMentionSpan(
   trigger: string,
   item: MentionItem,
+  dataPart?: Record<string, any>,
 ): HTMLSpanElement {
   const span = document.createElement('span')
   span.contentEditable = 'false'
   span.dataset.mentionId = item.id
   span.dataset.mentionTrigger = trigger
+  if (dataPart) {
+    span.dataset.mentionDataPart = JSON.stringify(dataPart)
+  }
   span.className = 'mentionly-mention'
   span.textContent = `${trigger}${item.label}`
   return span
@@ -35,11 +39,24 @@ export function parseDOMToParts(editor: HTMLElement): ContentPart[] {
         const trigger = el.dataset.mentionTrigger ?? ''
         const raw = el.textContent ?? ''
         const label = raw.startsWith(trigger) ? raw.slice(trigger.length) : raw
+        let customDataPart: Record<string, any> | undefined
+        const encodedDataPart = el.dataset.mentionDataPart
+        if (encodedDataPart) {
+          try {
+            const parsed = JSON.parse(encodedDataPart)
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              customDataPart = parsed as Record<string, any>
+            }
+          } catch {
+            customDataPart = undefined
+          }
+        }
         parts.push({
           type: 'mention',
           triggeredBy: trigger,
           id: el.dataset.mentionId,
           label,
+          dataPart: customDataPart,
         })
         return
       }
@@ -84,6 +101,11 @@ export function contentPartsToDataParts(
     if (part.type === 'text') {
       raw.push({ type: 'text', text: part.content })
     } else {
+      if (part.dataPart) {
+        raw.push({ type: 'data', ...part.dataPart })
+        continue
+      }
+
       const trigger = triggers.find((t) => t.char === part.triggeredBy)
       const item: MentionItem = { id: part.id, label: part.label }
 
@@ -155,7 +177,7 @@ export function restoreContent(
         }
       })
     } else {
-      editor.appendChild(createMentionSpan(part.triggeredBy, { id: part.id, label: part.label }))
+      editor.appendChild(createMentionSpan(part.triggeredBy, { id: part.id, label: part.label }, part.dataPart))
     }
   }
 

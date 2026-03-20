@@ -192,8 +192,15 @@ inputRef.value.getDataParts()   // DataPart[]
 inputRef.value.getPlainText()   // string
 inputRef.value.clear()
 inputRef.value.setContent(parts)  // 从 ContentPart[] 恢复内容
+inputRef.value.insertMention({
+  id: 'ctx-1',
+  label: '选中内容',
+  dataPart: (item) => ({ dataType: 'selection_ref', sourceId: item.id, title: item.label }),
+})
 inputRef.value.focus()
 ```
+
+`insertMention()` 支持插入未注册到任何 trigger 列表中的自定义原子节点。
 
 ## 反序列化
 

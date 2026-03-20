@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { MentionInput, version } from 'mentionly'
-import type { DataPart, ContentPart, PopupMode, PopupScrollBehavior, MentionItem } from 'mentionly'
+import type { DataPart, ContentPart, PopupMode, PopupScrollBehavior, MentionItem, MentionTrigger } from 'mentionly'
 import CodeBlock from './components/CodeBlock.vue'
 import { i18n, type Locale } from './i18n'
 
@@ -10,6 +10,8 @@ const output = ref<DataPart[]>([])
 const popupMode = ref<PopupMode>('cursor')
 const popupScrollBehavior = ref<PopupScrollBehavior>('reposition')
 const usageBlockEnter = ref(false)
+const insertDemoRef = ref()
+const insertCount = ref(0)
 
 // ── i18n ──
 const urlLang = new URLSearchParams(window.location.search).get('lang')
@@ -83,6 +85,37 @@ function onUsageEnter(e: KeyboardEvent) {
 
 function onUsageSubmit(parts: DataPart[]) {
   console.log('Usage submit:', parts)
+}
+
+const customTriggerDemo = computed<MentionTrigger[]>(() => [
+  {
+    char: '$',
+    items: [
+      { id: 'var-1', label: 'workspace.path', desc: t.value.customTriggerVarPath },
+      { id: 'var-2', label: 'workspace.branch', desc: t.value.customTriggerVarBranch },
+      { id: 'var-3', label: 'request.user', desc: t.value.customTriggerVarUser },
+    ],
+    dataPart: (item: MentionItem) => ({
+      dataType: 'variable_ref',
+      variableId: item.id,
+      key: item.label,
+    }),
+  },
+])
+
+function insertContextNode() {
+  insertCount.value += 1
+  const index = insertCount.value
+  insertDemoRef.value?.insertMention({
+    id: `ctx-${index}`,
+    label: t.value.contextLabel(index),
+    dataPart: {
+      dataType: 'context_ref',
+      contextId: `ctx-${index}`,
+      source: 'selection',
+      content: t.value.contextContent(index),
+    },
+  })
 }
 
 
@@ -217,6 +250,21 @@ function loadSaved() {
 
         <div class="usage-section">
           <div class="usage-header">
+            <h4>{{ t.customTriggerTitle }}</h4>
+            <p>{{ t.customTriggerDesc }}</p>
+          </div>
+          <div class="usage-demo">
+            <MentionInput
+              :triggers="customTriggerDemo"
+              :placeholder="t.customTriggerPlaceholder"
+              :popup-scroll-behavior="popupScrollBehavior"
+            />
+          </div>
+          <CodeBlock :code="t.customTriggerCode" :copy-label="t.copy" :copied-label="t.copied" />
+        </div>
+
+        <div class="usage-section">
+          <div class="usage-header">
             <h4>{{ t.advancedTitle }}</h4>
             <p>{{ t.advancedDesc }}</p>
           </div>
@@ -267,6 +315,25 @@ function loadSaved() {
             </MentionInput>
           </div>
           <CodeBlock :code="t.avatarCode" :copy-label="t.copy" :copied-label="t.copied" />
+        </div>
+
+        <div class="usage-section">
+          <div class="usage-header">
+            <h4>{{ t.insertTitle }}</h4>
+            <p>{{ t.insertDesc }}</p>
+          </div>
+          <div class="usage-demo">
+            <MentionInput
+              ref="insertDemoRef"
+              :triggers="triggers"
+              :placeholder="t.insertPlaceholder"
+              :popup-scroll-behavior="popupScrollBehavior"
+            />
+            <div class="card-actions">
+              <button class="card-btn" @click="insertContextNode">{{ t.insertAction }}</button>
+            </div>
+          </div>
+          <CodeBlock :code="t.insertCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
       </div>
     </section>
@@ -607,5 +674,23 @@ h1 {
   margin-top: 4px;
   font-size: 12px;
   color: #9ca3af;
+}
+
+.card-actions {
+  margin-top: 8px;
+}
+
+.card-btn {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.card-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
 }
 </style>

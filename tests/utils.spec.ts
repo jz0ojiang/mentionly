@@ -54,6 +54,31 @@ describe('utils', () => {
     ])
   })
 
+  it('prioritizes mention-level dataPart over trigger mapping', () => {
+    const parts: ContentPart[] = [
+      {
+        type: 'mention',
+        triggeredBy: '@',
+        id: 'u1',
+        label: 'Alice',
+        dataPart: { dataType: 'custom_ref', refId: 'external-u1' },
+      },
+    ]
+    const triggerWithMapper: MentionTrigger[] = [
+      {
+        char: '@',
+        items: [],
+        dataPart: (item) => ({ dataType: 'mentioned_ref', projectId: item.id }),
+      },
+    ]
+
+    const data = contentPartsToDataParts(parts, triggerWithMapper)
+
+    expect(data).toEqual([
+      { type: 'data', dataType: 'custom_ref', refId: 'external-u1' },
+    ])
+  })
+
   it('restores content with mentions and newlines', () => {
     const editor = document.createElement('div')
     const parts: ContentPart[] = [
@@ -68,5 +93,27 @@ describe('utils', () => {
     expect(mention).toBeTruthy()
     expect(mention.textContent).toBe('@Alice')
     expect(editor.innerHTML).toContain('<br')
+  })
+
+  it('restores and parses custom mention dataPart from DOM dataset', () => {
+    const editor = document.createElement('div')
+    const parts: ContentPart[] = [
+      {
+        type: 'mention',
+        triggeredBy: '',
+        id: 'ctx-1',
+        label: 'Context #1',
+        dataPart: {
+          dataType: 'context_ref',
+          contextId: 'ctx-1',
+          content: 'long selected content',
+        },
+      },
+    ]
+
+    restoreContent(editor, parts)
+    const parsed = parseDOMToParts(editor)
+
+    expect(parsed).toEqual(parts)
   })
 })

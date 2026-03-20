@@ -64,7 +64,29 @@ export interface MentionTrigger {
 /** 内部中间表示：编辑器内容的结构化片段 */
 export type ContentPart =
   | { type: 'text'; content: string }
-  | { type: 'mention'; triggeredBy: string; id: string; label: string }
+  | {
+    type: 'mention'
+    triggeredBy: string
+    id: string
+    label: string
+    dataPart?: Record<string, any>
+  }
+
+/** 编程式插入 mention 的参数 */
+export interface InsertMentionPayload {
+  id: string
+  label: string
+  triggeredBy?: string
+  dataPart?:
+    | Record<string, any>
+    | ((item: MentionItem & { triggeredBy: string }) => Record<string, any>)
+}
+
+/** 编程式插入 mention 的可选项 */
+export interface InsertMentionOptions {
+  appendSpace?: boolean
+  focus?: boolean
+}
 
 /** 输出给后端的 DataPart（最终序列化结果） */
 export type DataPart =
@@ -128,6 +150,7 @@ export interface UseMentionReturn {
 
   // ── 操作方法 ──
   select: (item: MentionItem) => void
+  insertMention: (payload: InsertMentionPayload, options?: InsertMentionOptions) => boolean
   close: () => void
 
   // ── 内容序列化 ──

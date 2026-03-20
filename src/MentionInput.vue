@@ -71,6 +71,7 @@ const {
   loading,
   popupPosition,
   select,
+  insertMention,
   close,
   getParts,
   getDataParts,
@@ -158,6 +159,7 @@ defineExpose({
   getPlainText,
   clear,
   setContent,
+  insertMention,
   focus,
 })
 </script>
