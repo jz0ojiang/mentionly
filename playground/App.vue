@@ -103,6 +103,29 @@ const customTriggerDemo = computed<MentionTrigger[]>(() => [
   },
 ])
 
+// 分页（加载更多）演示：模拟一个有大量结果的远程数据源
+const ALL_USERS: MentionItem[] = Array.from({ length: 120 }, (_, i) => ({
+  id: `u-${i + 1}`,
+  label: `User ${String(i + 1).padStart(3, '0')}`,
+  desc: `#${i + 1}`,
+}))
+
+const paginationDemo = computed<MentionTrigger[]>(() => [
+  {
+    char: '@',
+    pagination: { pageSize: 15 },
+    items: (query: string, page?: { offset: number; limit: number }) => {
+      const matched = ALL_USERS.filter((u) => u.label.toLowerCase().includes(query.toLowerCase()))
+      const offset = page?.offset ?? 0
+      const limit = page?.limit ?? matched.length
+      const slice = matched.slice(offset, offset + limit)
+      // 模拟网络延迟，便于看到 "Loading more..." 指示器
+      return new Promise<MentionItem[]>((resolve) => setTimeout(() => resolve(slice), 400))
+    },
+    dataPart: (item: MentionItem) => ({ dataType: 'user_ref', userId: item.id, name: item.label }),
+  },
+])
+
 function insertContextNode() {
   insertCount.value += 1
   const index = insertCount.value
@@ -334,6 +357,21 @@ function loadSaved() {
             </div>
           </div>
           <CodeBlock :code="t.insertCode" :copy-label="t.copy" :copied-label="t.copied" />
+        </div>
+
+        <div class="usage-section">
+          <div class="usage-header">
+            <h4>{{ t.paginationTitle }}</h4>
+            <p>{{ t.paginationDesc }}</p>
+          </div>
+          <div class="usage-demo">
+            <MentionInput
+              :triggers="paginationDemo"
+              :placeholder="t.paginationPlaceholder"
+              :popup-scroll-behavior="popupScrollBehavior"
+            />
+          </div>
+          <CodeBlock :code="t.paginationCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
       </div>
     </section>

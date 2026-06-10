@@ -15,6 +15,7 @@ Lightweight Vue 3 mention input component for AI chat scenarios. Zero dependenci
 - **Atomic mention entities** — `contenteditable="false"` spans, indivisible and styled
 - **Customizable output schema** — `dataPart` transformer or declarative `schema` mapping
 - **Async data sources** — With debounce and race condition protection
+- **Backend pagination** — Load the next page automatically on scroll or keyboard navigation, with an `{ offset, limit }` data source contract
 - **Command mode** — `/slash` commands that trigger callbacks without inserting entities
 - **IME compatible** — Correct handling of Chinese / Japanese / Korean input
 - **Serialization & deserialization** — `getDataParts()` for submission, `setContent()` for editing saved messages
@@ -116,12 +117,17 @@ interface MentionTrigger {
   char: string                    // Trigger character
   mode?: 'inline' | 'command'     // Default 'inline'
   items: MentionItem[]            // Static array
-    | ((query: string) => MentionItem[] | Promise<MentionItem[]>)  // or function
+    | ((query: string, page?: { offset: number; limit: number })   // or function
+        => MentionItemsResult | Promise<MentionItemsResult>)
+  pagination?: { pageSize: number }  // Enable backend pagination (function sources only)
   debounce?: number               // Async debounce ms, default 0
   dataPart?: (item) => Record<string, any>  // Output transformer
   schema?: { type: string; mapping: Record<string, string> }  // Declarative mapping
   onSelect?: (item) => void       // Command mode callback
 }
+
+// Function sources may return a bare array, or an object with an explicit hasMore:
+type MentionItemsResult = MentionItem[] | { items: MentionItem[]; hasMore?: boolean }
 ```
 
 ### Multiple Triggers
@@ -146,6 +152,31 @@ const triggers = [
   debounce: 200,
 }
 ```
+
+### Backend Pagination (Load More)
+
+Set `pagination.pageSize` to turn a function source into a paginated one. The function then receives a second `{ offset, limit }` argument, and the dropdown automatically loads the next page — appending the results — when the user scrolls near the bottom or navigates near the end with the keyboard.
+
+```ts
+{
+  char: '@',
+  pagination: { pageSize: 20 },
+  items: async (query, page) => {
+    const res = await fetch(`/api/users?q=${query}&offset=${page.offset}&limit=${page.limit}`)
+    const users = await res.json()
+
+    // Option 1 — return a bare array; hasMore is inferred from `length >= limit`
+    return users
+
+    // Option 2 — be explicit about whether there is a next page
+    // return { items: users.list, hasMore: users.hasNext }
+  },
+}
+```
+
+- **Function sources only** — static arrays still render in full, unchanged.
+- **Backward compatible** — omit `pagination` and the old `(query) => items` contract behaves exactly as before (the second argument is never passed).
+- `loading` covers the first page (replaces the list); `loadingMore` covers subsequent pages (keeps the list, shows a footer indicator). Both are exposed by `useMention` / the `#list` slot.
 
 ## MentionInput Props
 
@@ -172,10 +203,11 @@ const triggers = [
 
 | Slot | Props | Description |
 |------|-------|-------------|
-| `#list` | `{ items, activeIndex, select, loading }` | Custom dropdown |
+| `#list` | `{ items, activeIndex, select, loading, hasMore, loadingMore, loadMore }` | Custom dropdown |
 | `#item` | `{ item, active, select }` | Custom item rendering |
 | `#empty` | `{ query }` | No results |
-| `#loading` | `{}` | Loading state |
+| `#loading` | `{}` | Loading state (first page) |
+| `#loading-more` | `{}` | "Load more" indicator while fetching the next page |
 | `#actions` | `{ submit, clear, isEmpty }` | Custom action bar |
 | `#inner-actions` | `{ submit, clear, isEmpty }` | Inside editor area, below the input (e.g. send button) |
 | `#default` | `{ submit, clear, isEmpty, focus, getParts }` | Bottom of wrapper, free-form content |

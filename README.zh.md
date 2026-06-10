@@ -15,6 +15,7 @@
 - **原子 mention 实体** — `contenteditable="false"` 的 span，不可分割、不可部分选中
 - **可自定义输出结构** — 支持 `dataPart` 转换函数或声明式 `schema` 映射
 - **异步数据源** — 支持防抖和竞态保护
+- **后端分页** — 滚动或键盘导航到底时自动加载下一页，数据源约定为 `{ offset, limit }`
 - **命令模式** — `/斜杠` 命令触发回调，不插入实体
 - **IME 兼容** — 正确处理中文/日文/韩文输入法
 - **序列化与反序列化** — `getDataParts()` 用于提交，`setContent()` 用于编辑已发消息
@@ -116,12 +117,17 @@ interface MentionTrigger {
   char: string                    // 触发字符
   mode?: 'inline' | 'command'     // 默认 'inline'
   items: MentionItem[]            // 静态数组
-    | ((query: string) => MentionItem[] | Promise<MentionItem[]>)  // 或函数
+    | ((query: string, page?: { offset: number; limit: number })   // 或函数
+        => MentionItemsResult | Promise<MentionItemsResult>)
+  pagination?: { pageSize: number }  // 启用后端分页（仅对函数源生效）
   debounce?: number               // 异步防抖毫秒数，默认 0
   dataPart?: (item) => Record<string, any>  // 输出转换函数
   schema?: { type: string; mapping: Record<string, string> }  // 声明式映射
   onSelect?: (item) => void       // 命令模式回调
 }
+
+// 函数源可返回裸数组，或带显式 hasMore 的对象：
+type MentionItemsResult = MentionItem[] | { items: MentionItem[]; hasMore?: boolean }
 ```
 
 ### 多触发器
@@ -146,6 +152,31 @@ const triggers = [
   debounce: 200,
 }
 ```
+
+### 后端分页（加载更多）
+
+配置 `pagination.pageSize` 即可把函数源变成分页源。此时函数会收到第二个参数 `{ offset, limit }`，当用户滚动到列表底部、或键盘导航接近末尾时，下拉列表会自动加载下一页并**追加**结果。
+
+```ts
+{
+  char: '@',
+  pagination: { pageSize: 20 },
+  items: async (query, page) => {
+    const res = await fetch(`/api/users?q=${query}&offset=${page.offset}&limit=${page.limit}`)
+    const users = await res.json()
+
+    // 方式一 —— 返回裸数组；hasMore 按 `length >= limit` 推断
+    return users
+
+    // 方式二 —— 由后端显式告知是否还有下一页
+    // return { items: users.list, hasMore: users.hasNext }
+  },
+}
+```
+
+- **仅对函数源生效** —— 静态数组维持一次性全量渲染，行为不变。
+- **向后兼容** —— 不配置 `pagination` 时，旧的 `(query) => items` 约定完全不变（不会传入第二个参数）。
+- `loading` 对应首屏（替换列表），`loadingMore` 对应后续页（保留列表、底部显示指示器）。两者都由 `useMention` / `#list` 插槽暴露。
 
 ## MentionInput Props
 
@@ -172,10 +203,11 @@ const triggers = [
 
 | 插槽 | Props | 说明 |
 |------|-------|------|
-| `#list` | `{ items, activeIndex, select, loading }` | 自定义下拉列表 |
+| `#list` | `{ items, activeIndex, select, loading, hasMore, loadingMore, loadMore }` | 自定义下拉列表 |
 | `#item` | `{ item, active, select }` | 自定义候选项渲染 |
 | `#empty` | `{ query }` | 无匹配结果提示 |
-| `#loading` | `{}` | 加载中提示 |
+| `#loading` | `{}` | 加载中提示（首屏） |
+| `#loading-more` | `{}` | 加载下一页时的“加载更多”指示器 |
 | `#actions` | `{ submit, clear, isEmpty }` | 自定义底部操作栏 |
 | `#inner-actions` | `{ submit, clear, isEmpty }` | 编辑器内部、输入框下方（如发送按钮） |
 | `#default` | `{ submit, clear, isEmpty, focus, getParts }` | 最外层底部，自由放置内容 |

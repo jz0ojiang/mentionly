@@ -5,6 +5,8 @@ export { default as MentionList } from './MentionList.vue'
 export type {
   MentionItem,
   MentionTrigger,
+  MentionPageInfo,
+  MentionItemsResult,
   TriggerMode,
   PopupMode,
   PopupScrollBehavior,

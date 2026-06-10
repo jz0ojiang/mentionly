@@ -38,10 +38,14 @@ defineSlots<{
     activeIndex: number
     select: (item: MentionItem) => void
     loading: boolean
+    hasMore: boolean
+    loadingMore: boolean
+    loadMore: () => void
   }) => any
   item?: (props: { item: MentionItem; active: boolean; select: () => void }) => any
   empty?: (props: { query: string }) => any
   loading?: (props: {}) => any
+  'loading-more'?: (props: {}) => any
   'inner-actions'?: (props: {
     submit: () => void
     clear: () => void
@@ -70,8 +74,11 @@ const {
   activeTrigger,
   loading,
   popupPosition,
+  hasMore,
+  loadingMore,
   select,
   insertMention,
+  loadMore,
   close,
   getParts,
   getDataParts,
@@ -197,13 +204,19 @@ defineExpose({
           :active-index="activeIndex"
           :select="select"
           :loading="loading"
+          :has-more="hasMore"
+          :loading-more="loadingMore"
+          :load-more="loadMore"
         >
           <MentionList
             :items="filteredItems"
             :active-index="activeIndex"
             :loading="loading"
             :query="query"
+            :has-more="hasMore"
+            :loading-more="loadingMore"
             @select="select"
+            @load-more="loadMore"
           >
             <template v-if="$slots.item" #item="slotProps">
               <slot name="item" v-bind="slotProps" />
@@ -213,6 +226,9 @@ defineExpose({
             </template>
             <template v-if="$slots.loading" #loading>
               <slot name="loading" />
+            </template>
+            <template v-if="$slots['loading-more']" #loading-more>
+              <slot name="loading-more" />
             </template>
           </MentionList>
         </slot>
@@ -347,5 +363,12 @@ defineExpose({
   text-align: center;
   color: #9ca3af;
   font-size: 13px;
+}
+
+.mentionly-list-more {
+  padding: 8px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
 }
 </style>

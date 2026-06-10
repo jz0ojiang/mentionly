@@ -14,6 +14,26 @@ export interface MentionItem {
 /** 触发器模式 */
 export type TriggerMode = 'inline' | 'command'
 
+/**
+ * 分页请求信息。仅当触发器配置了 `pagination` 时，作为第二参数传给函数型数据源。
+ * - offset: 本次请求应从第几条开始（= 已加载条数）
+ * - limit: 每页条数（= pagination.pageSize）
+ * 既可用于 offset-based 后端（?offset=&limit=），也可反推 page（offset / limit）。
+ */
+export interface MentionPageInfo {
+  offset: number
+  limit: number
+}
+
+/**
+ * 函数型数据源的返回形态：
+ * - 裸数组：按 `length >= limit` 推断是否还有下一页
+ * - `{ items, hasMore }`：由后端显式告知是否还有下一页（hasMore 省略时回退到推断）
+ */
+export type MentionItemsResult =
+  | MentionItem[]
+  | { items: MentionItem[]; hasMore?: boolean }
+
 /** 触发器配置 */
 export interface MentionTrigger {
   /** 触发字符，如 '@', '#', '/' */
@@ -27,10 +47,23 @@ export interface MentionTrigger {
    * - 静态数组
    * - 同步过滤函数
    * - 异步函数（返回 Promise，用于远程搜索）
+   *
+   * 当触发器配置了 `pagination` 时，函数会收到第二参数 {@link MentionPageInfo}，
+   * 并可返回 `{ items, hasMore }` 以支持后端分页 / 滚动加载更多。
    */
   items:
     | MentionItem[]
-    | ((query: string) => MentionItem[] | Promise<MentionItem[]>)
+    | ((query: string, page?: MentionPageInfo) => MentionItemsResult | Promise<MentionItemsResult>)
+
+  /**
+   * 后端分页配置。配置后该触发器启用分页：数据源被逐页调用，用户滚动到列表底部
+   * 或键盘导航接近末尾时自动加载下一批，结果追加到列表。仅对函数型数据源生效
+   * （静态数组维持一次性全量行为）。
+   */
+  pagination?: {
+    /** 每页条数 */
+    pageSize: number
+  }
 
   /** 异步数据源的防抖时间（ms），默认 0（无防抖） */
   debounce?: number
@@ -148,9 +181,17 @@ export interface UseMentionReturn {
   loading: Ref<boolean>
   popupPosition: Ref<PopupPosition>
 
+  // ── 分页状态 ──
+  /** 当前激活触发器是否还有下一页（仅分页触发器为 true） */
+  hasMore: Ref<boolean>
+  /** 是否正在加载下一页（区别于首屏 loading，不会清空已加载列表） */
+  loadingMore: Ref<boolean>
+
   // ── 操作方法 ──
   select: (item: MentionItem) => void
   insertMention: (payload: InsertMentionPayload, options?: InsertMentionOptions) => boolean
+  /** 加载下一页并追加到列表。无下一页 / 正在加载 / 非分页源时为空操作 */
+  loadMore: () => void
   close: () => void
 
   // ── 内容序列化 ──

@@ -4,6 +4,8 @@ import type {
   UseMentionReturn,
   MentionItem,
   MentionTrigger,
+  MentionPageInfo,
+  MentionItemsResult,
   ContentPart,
   DataPart,
   PopupPosition,
@@ -31,6 +33,14 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
   const activeTrigger: Ref<string | null> = ref(null)
   const loading = ref(false)
   const popupPosition: Ref<PopupPosition> = ref({ top: 0, left: 0 })
+
+  // ── 分页状态 ──
+  const hasMore = ref(false)
+  const loadingMore = ref(false)
+  // 已提交（成功加载）的条数，即下一页请求的 offset。仅在请求成功时推进。
+  let loadedOffset = 0
+  // 键盘导航接近末尾多少项时预取下一页
+  const PREFETCH_THRESHOLD = 3
 
   // ── 内部状态 ──
   let isComposing = false
@@ -76,9 +86,33 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     }
   }
 
-  // ── 加载候选项（统一 Promise.resolve 包装，不再双重调用） ──
+  // 读取触发器的分页页大小；未配置或非法则返回 null（= 不分页）
+  function getPageSize(trigger: MentionTrigger): number | null {
+    const ps = trigger.pagination?.pageSize
+    return typeof ps === 'number' && ps > 0 ? ps : null
+  }
+
+  // 归一化函数型数据源的返回值
+  function normalizeResult(
+    raw: MentionItemsResult,
+    pageSize: number | null,
+  ): { list: MentionItem[]; more: boolean } {
+    if (Array.isArray(raw)) {
+      return { list: raw, more: pageSize != null && raw.length >= pageSize }
+    }
+    const list = raw?.items ?? []
+    const more = raw?.hasMore ?? (pageSize != null && list.length >= pageSize)
+    return { list, more }
+  }
+
+  // ── 加载候选项（首屏：替换列表并无条件重置分页状态） ──
   function loadItems(trigger: MentionTrigger, q: string) {
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null }
+
+    // 无条件重置分页状态，覆盖 query 变化与多 trigger 切换
+    loadedOffset = 0
+    hasMore.value = false
+    loadingMore.value = false
 
     const { items } = trigger
 
@@ -91,32 +125,71 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
 
     const debounceMs = trigger.debounce ?? 0
     const version = ++asyncVersion
+    loading.value = true
 
+    const run = () => resolveItems(trigger, q, version, 0, 'replace')
     if (debounceMs > 0) {
-      loading.value = true
-      debounceTimer = setTimeout(() => resolveItems(items, q, version), debounceMs)
+      debounceTimer = setTimeout(run, debounceMs)
     } else {
-      loading.value = true
-      resolveItems(items, q, version)
+      run()
     }
   }
 
+  // 加载下一页并追加。无下一页 / 正在加载 / 非分页源时为空操作。
+  function loadMore() {
+    if (!isOpen.value || loading.value || loadingMore.value || !hasMore.value) return
+
+    const trigger = getTriggers().find((t) => t.char === activeTrigger.value)
+    if (!trigger || Array.isArray(trigger.items)) return
+    if (getPageSize(trigger) == null) return
+
+    // 同步置位作为并发锁；沿用当前 asyncVersion（新 query 会 bump 使其失效）
+    loadingMore.value = true
+    resolveItems(trigger, query.value, asyncVersion, loadedOffset, 'append')
+  }
+
   async function resolveItems(
-    items: (q: string) => MentionItem[] | Promise<MentionItem[]>,
+    trigger: MentionTrigger,
     q: string,
     version: number,
+    offset: number,
+    mode: 'replace' | 'append',
   ) {
+    const items = trigger.items as (
+      query: string,
+      page?: MentionPageInfo,
+    ) => MentionItemsResult | Promise<MentionItemsResult>
+    const pageSize = getPageSize(trigger)
+    const pageArg: MentionPageInfo | undefined =
+      pageSize != null ? { offset, limit: pageSize } : undefined
+
     try {
-      const data = await Promise.resolve(items(q))
-      if (version === asyncVersion) {
-        filteredItems.value = data
-        loading.value = false
+      // 非分页源保持原有的一元调用，避免传入多余的第二参数
+      const raw = await Promise.resolve(pageArg ? items(q, pageArg) : items(q))
+      // 过期请求（query 变化 / close）直接丢弃，不触碰任何状态
+      if (version !== asyncVersion) return
+
+      const { list, more } = normalizeResult(raw, pageSize)
+      filteredItems.value = mode === 'append' ? filteredItems.value.concat(list) : list
+
+      // 防止 activeIndex 越界（append 与新 query replace 竞态时尤为重要）
+      if (activeIndex.value > filteredItems.value.length - 1) {
+        activeIndex.value = Math.max(0, filteredItems.value.length - 1)
       }
+
+      loadedOffset = filteredItems.value.length
+      hasMore.value = pageSize != null && more
+      loading.value = false
+      loadingMore.value = false
     } catch {
-      if (version === asyncVersion) {
+      if (version !== asyncVersion) return
+      // 首屏失败清空；追加失败保留已加载项与 hasMore 以便重试，且不推进 offset
+      if (mode === 'replace') {
         filteredItems.value = []
-        loading.value = false
+        hasMore.value = false
       }
+      loading.value = false
+      loadingMore.value = false
     }
   }
   // ── 选中候选项 ──
@@ -276,7 +349,20 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     filteredItems.value = []
     activeIndex.value = 0
     loading.value = false
+    loadingMore.value = false
+    hasMore.value = false
+    loadedOffset = 0
+    // 作废所有在途请求，避免响应回来污染已关闭的列表
+    asyncVersion++
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null }
+  }
+
+  // 键盘向下接近末尾时静默预取下一页（不改变循环导航语义）
+  function maybePrefetch() {
+    if (!hasMore.value) return
+    if (activeIndex.value >= filteredItems.value.length - PREFETCH_THRESHOLD) {
+      loadMore()
+    }
   }
   // ── 事件处理器 ──
   function onInput() {
@@ -292,6 +378,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
         e.preventDefault()
         if (filteredItems.value.length > 0) {
           activeIndex.value = (activeIndex.value + 1) % filteredItems.value.length
+          maybePrefetch()
         }
         return
       case 'ArrowUp':
@@ -458,8 +545,11 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     activeTrigger,
     loading,
     popupPosition,
+    hasMore,
+    loadingMore,
     select,
     insertMention,
+    loadMore,
     close,
     getParts,
     getDataParts,
