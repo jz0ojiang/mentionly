@@ -14,18 +14,23 @@ const props = defineProps<{
 
 // 当 activeId 受控时使用外部值，否则内部根据滚动位置推断
 const internalActiveId = ref<string | null>(null)
+const isControlled = computed(() => props.activeId !== undefined)
 const activeId = computed(() => props.activeId ?? internalActiveId.value)
+
+const CLOSE_DELAY_MS = 260 // 鼠标短暂划出 TOC 时给的回旋余地
+const LOCK_RELEASE_MS = 150 // 末次 scroll 事件后多久判定滚动停止、释放点击锁
 
 // hover 展开带「关闭延迟」：鼠标短暂划出不立即收起
 const open = ref(false)
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 function onPointerEnter() {
-  if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
+  clearTimeout(closeTimer ?? undefined)
+  closeTimer = null
   open.value = true
 }
 function onPointerLeave() {
-  if (closeTimer) clearTimeout(closeTimer)
-  closeTimer = setTimeout(() => { open.value = false; closeTimer = null }, 260)
+  clearTimeout(closeTimer ?? undefined)
+  closeTimer = setTimeout(() => { open.value = false; closeTimer = null }, CLOSE_DELAY_MS)
 }
 
 let rafId: number | null = null
@@ -40,7 +45,7 @@ function releaseLockSoon() {
     lockReleaseTimer = null
     clickLockId = null
     computeActive()
-  }, 150)
+  }, LOCK_RELEASE_MS)
 }
 
 // ── 自实现平滑滚动：可被用户滚轮 / 触摸打断（原生 scrollIntoView 做不到） ──
@@ -61,7 +66,8 @@ function onUserScrollInput() {
   endProgrammaticScroll()
   if (clickLockId) {
     clickLockId = null
-    if (lockReleaseTimer) { clearTimeout(lockReleaseTimer); lockReleaseTimer = null }
+    clearTimeout(lockReleaseTimer ?? undefined)
+    lockReleaseTimer = null
     computeActive()
   }
 }
@@ -92,7 +98,7 @@ function smoothScrollTo(targetY: number) {
 }
 
 function computeActive() {
-  if (props.activeId !== undefined) return
+  if (isControlled.value) return
   if (clickLockId) return
   const list = props.sections
   if (!list.length) return
@@ -136,7 +142,7 @@ function handleClick(id: string) {
     smoothScrollTo(targetY)
   }
   // 立即反映点击；锁定高亮直到平滑滚动停止（由 onScroll 的停止检测释放）
-  if (props.activeId === undefined) {
+  if (!isControlled.value) {
     internalActiveId.value = id
     clickLockId = id
     releaseLockSoon() // 兜底：即使没触发滚动（已在目标位置）也能释放
@@ -159,8 +165,7 @@ onBeforeUnmount(() => {
   endProgrammaticScroll()
 })
 
-watch(() => props.sections.map((s) => s.id).join(','), computeActive)
-watch(() => props.activeId, () => { if (props.activeId === undefined) computeActive() })
+watch(() => props.sections, computeActive, { deep: true })
 </script>
 
 <template>
