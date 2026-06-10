@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { MentionInput, version } from 'mentionly'
 import type { DataPart, ContentPart, PopupMode, PopupScrollBehavior, MentionItem, MentionTrigger } from 'mentionly'
 import CodeBlock from './components/CodeBlock.vue'
+import FloatingSectionIndicator from './components/FloatingSectionIndicator.vue'
 import { i18n, type Locale } from './i18n'
 
 const inputRef = ref()
@@ -19,6 +20,19 @@ const defaultLocale: Locale = urlLang === 'zh' || urlLang === 'en' ? urlLang : n
 const locale = ref<Locale>(defaultLocale)
 
 const t = computed(() => i18n[locale.value])
+
+// 右侧浮动 TOC 跟踪的区块（顺序与文档顺序一致）
+const tocSections = computed(() => [
+  { id: 'sec-config', label: 'Playground' },
+  { id: 'sec-editor', label: 'Editor' },
+  { id: 'sec-output', label: 'Submit Output' },
+  { id: 'sec-basic', label: t.value.basicTitle },
+  { id: 'sec-custom-trigger', label: t.value.customTriggerTitle },
+  { id: 'sec-advanced', label: t.value.advancedTitle },
+  { id: 'sec-avatar', label: t.value.avatarTitle },
+  { id: 'sec-insert', label: t.value.insertTitle },
+  { id: 'sec-pagination', label: t.value.paginationTitle },
+])
 
 // 自定义 @ 数据源
 const customAtInput = ref('John Smith, Alice Johnson, Michael Brown, Emily Davis, David Wilson')
@@ -174,7 +188,7 @@ function loadSaved() {
       {{ t.hint[0] }}<code>@</code>{{ t.hint[1] }}<code>#</code>{{ t.hint[2] }}<code>/</code>{{ t.hint[3] }}
     </p>
 
-    <section class="section">
+    <section id="sec-config" class="section">
       <h2 class="section-title">Playground</h2>
       <div class="controls">
         <div class="mode-switch">
@@ -208,7 +222,7 @@ function loadSaved() {
       </div>
     </section>
 
-    <section class="section">
+    <section id="sec-editor" class="section">
       <h2 class="section-title">Editor</h2>
       <div class="input-area">
         <MentionInput
@@ -244,7 +258,7 @@ function loadSaved() {
       </div>
     </section>
 
-    <section class="section">
+    <section id="sec-output" class="section">
       <h2 class="section-title">Submit Output</h2>
       <div v-if="output.length" class="output">
         <pre>{{ JSON.stringify(output, null, 2) }}</pre>
@@ -255,7 +269,7 @@ function loadSaved() {
     <section class="section">
       <h2 class="section-title">{{ t.usageTitle }}</h2>
       <div class="usage">
-        <div class="usage-section">
+        <div id="sec-basic" class="usage-section">
           <div class="usage-header">
             <h4>{{ t.basicTitle }}</h4>
             <p>{{ t.basicDesc }}</p>
@@ -271,7 +285,7 @@ function loadSaved() {
           <CodeBlock :code="t.basicCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
 
-        <div class="usage-section">
+        <div id="sec-custom-trigger" class="usage-section">
           <div class="usage-header">
             <h4>{{ t.customTriggerTitle }}</h4>
             <p>{{ t.customTriggerDesc }}</p>
@@ -286,7 +300,7 @@ function loadSaved() {
           <CodeBlock :code="t.customTriggerCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
 
-        <div class="usage-section">
+        <div id="sec-advanced" class="usage-section">
           <div class="usage-header">
             <h4>{{ t.advancedTitle }}</h4>
             <p>{{ t.advancedDesc }}</p>
@@ -318,7 +332,7 @@ function loadSaved() {
           <CodeBlock :code="t.advancedCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
 
-        <div class="usage-section">
+        <div id="sec-avatar" class="usage-section">
           <div class="usage-header">
             <h4>{{ t.avatarTitle }}</h4>
             <p>{{ t.avatarDesc }}</p>
@@ -340,7 +354,7 @@ function loadSaved() {
           <CodeBlock :code="t.avatarCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
 
-        <div class="usage-section">
+        <div id="sec-insert" class="usage-section">
           <div class="usage-header">
             <h4>{{ t.insertTitle }}</h4>
             <p>{{ t.insertDesc }}</p>
@@ -359,7 +373,7 @@ function loadSaved() {
           <CodeBlock :code="t.insertCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
 
-        <div class="usage-section">
+        <div id="sec-pagination" class="usage-section">
           <div class="usage-header">
             <h4>{{ t.paginationTitle }}</h4>
             <p>{{ t.paginationDesc }}</p>
@@ -375,6 +389,8 @@ function loadSaved() {
         </div>
       </div>
     </section>
+
+    <FloatingSectionIndicator :sections="tocSections" />
   </div>
 </template>
 
