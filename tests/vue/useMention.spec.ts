@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, nextTick } from 'vue'
-import { useMention } from '../src/useMention'
-import type { MentionItem, MentionTrigger } from '../src/types'
+import { useMention } from '../../src/vue/useMention'
+import type { MentionItem, MentionTrigger } from '../../src/core/types'
 
 function createEditorWithText(text: string, cursorOffset = text.length) {
   const editor = document.createElement('div')
