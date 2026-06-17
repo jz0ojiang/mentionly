@@ -34,5 +34,5 @@ coverage
 .DS_Store
 Thumbs.db
 
-# design docs (not part of the package)
-mention-input-prompt.md
+# local dev docs (planning / prompts, not part of the package)
+dev-docs/
