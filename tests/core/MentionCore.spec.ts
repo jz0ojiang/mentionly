@@ -187,13 +187,16 @@ describe('MentionCore — selection & serialization', () => {
     const original = document.execCommand
     document.execCommand = execCommand
 
-    core.handlers.input()
-    core.select(core.getState().filteredItems[0]!)
+    try {
+      core.handlers.input()
+      core.select(core.getState().filteredItems[0]!)
 
-    expect(execCommand).toHaveBeenCalled()
-    expect(core.getState().isOpen).toBe(false)
-
-    document.execCommand = original
+      expect(execCommand).toHaveBeenCalled()
+      expect(core.getState().isOpen).toBe(false)
+    } finally {
+      // 即使断言失败也恢复，避免泄漏到后续用例
+      document.execCommand = original
+    }
   })
 
   it('insertMention() appends a mention with a custom dataPart (no registered trigger)', () => {
@@ -457,6 +460,21 @@ describe('MentionCore — vanilla bindHandlers path', () => {
     editor.dispatchEvent(new Event('input'))
     expect(core.getState().isOpen).toBe(false)
   })
+
+  it('setElement rebinds handlers from the old element to the new one', () => {
+    const core = makeCore({ triggers: [{ char: '@', items: [{ id: '1', label: 'Alice' }] }] })
+    const editorA = createEditorWithText('@')
+    const editorB = createEditorWithText('@')
+
+    core.attach(editorA, { bindHandlers: true })
+    core.setElement(editorB) // 解绑 A、绑定 B
+
+    editorA.dispatchEvent(new Event('input'))
+    expect(core.getState().isOpen).toBe(false) // 旧元素不再响应
+
+    editorB.dispatchEvent(new Event('input'))
+    expect(core.getState().isOpen).toBe(true) // 新元素已绑定
+  })
 })
 
 // ── viewport 监听 ─────────────────────────────────────────
@@ -471,6 +489,27 @@ describe('MentionCore — viewport listeners', () => {
     core.handlers.input()
     expect(core.getState().isOpen).toBe(true)
 
+    window.dispatchEvent(new Event('scroll'))
+    expect(core.getState().isOpen).toBe(false)
+  })
+
+  it('setOptions dynamically switches scroll behavior (detach / reattach listeners)', () => {
+    const core = makeCore({
+      triggers: [{ char: '@', items: [{ id: '1', label: 'Alice' }] }],
+      popupScrollBehavior: 'reposition',
+    })
+    core.setElement(createEditorWithText('@'))
+    core.start({ bindHandlers: false })
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+
+    // reposition → ignore：监听器应被解绑，scroll 不再关闭
+    core.setOptions({ popupScrollBehavior: 'ignore' })
+    window.dispatchEvent(new Event('scroll'))
+    expect(core.getState().isOpen).toBe(true)
+
+    // ignore → close：监听器应重新挂上，scroll 关闭
+    core.setOptions({ popupScrollBehavior: 'close' })
     window.dispatchEvent(new Event('scroll'))
     expect(core.getState().isOpen).toBe(false)
   })
