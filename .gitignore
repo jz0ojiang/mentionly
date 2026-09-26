@@ -33,6 +33,3 @@ coverage
 # OS
 .DS_Store
 Thumbs.db
-
-# local dev docs (planning / prompts, not part of the package)
-dev-docs/
