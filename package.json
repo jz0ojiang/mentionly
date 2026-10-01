@@ -2,9 +2,10 @@
   "name": "mentionly-monorepo",
   "private": true,
   "type": "module",
-  "description": "Monorepo for mentionly: framework-agnostic core plus Vue adapter",
+  "description": "Monorepo for mentionly: framework-agnostic core plus Vue, React and Svelte adapters",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*"
   ],
   "scripts": {
     "dev": "vite --config vite.playground.ts",

@@ -3,7 +3,13 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [
-    ["@mentionly/core", "@mentionly/vue", "mentionly"]
+    [
+      "@mentionly/core",
+      "@mentionly/vue",
+      "@mentionly/react",
+      "@mentionly/svelte",
+      "mentionly"
+    ]
   ],
   "linked": [],
   "access": "public",
