@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, nextTick, ref } from 'vue'
 import MentionInput from '../../src/vue/MentionInput.vue'
@@ -194,6 +194,25 @@ describe('MentionInput', () => {
 
     expect(ev.defaultPrevented).toBe(false)
     expect(wrapper.emitted('submit')).toBeUndefined()
+  })
+
+  it('does not handle Enter with keyCode 229 (IME) — no onEnter, no submit, no preventDefault', async () => {
+    const onEnter = vi.fn()
+    const wrapper = mount(MentionInput, { props: { triggers, onEnter } })
+    const editor = wrapper.find('.mentionly-editor')
+    setEditorText(editor.element as HTMLElement, 'hello')
+    await editor.trigger('input')
+
+    const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    Object.defineProperty(ev, 'isComposing', { value: false })
+    Object.defineProperty(ev, 'keyCode', { value: 229 })
+    editor.element.dispatchEvent(ev)
+    await nextTick()
+
+    expect(onEnter).not.toHaveBeenCalled()
+    expect(wrapper.emitted('submit')).toBeUndefined()
+    expect(ev.defaultPrevented).toBe(false)
+    wrapper.unmount()
   })
 
   it('does not select a list item on Enter while the IME is composing', async () => {
