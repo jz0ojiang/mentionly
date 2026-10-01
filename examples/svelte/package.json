@@ -10,8 +10,8 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@mentionly/core": "^1.2.1",
-    "@mentionly/svelte": "^1.2.1",
+    "@mentionly/core": "^2.0.0-next.0",
+    "@mentionly/svelte": "^2.0.0-next.0",
     "svelte": "^5.0.0"
   },
   "devDependencies": {

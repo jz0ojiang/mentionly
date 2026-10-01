@@ -1,6 +1,6 @@
 {
   "name": "@mentionly/vue",
-  "version": "1.2.1",
+  "version": "2.0.0-next.0",
   "type": "module",
   "description": "Vue 3 mention input component for AI chat scenarios",
   "main": "./dist/index.cjs",
@@ -31,7 +31,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@mentionly/core": "^1.2.1"
+    "@mentionly/core": "^2.0.0-next.0"
   },
   "peerDependencies": {
     "vue": "^3.3.0"
