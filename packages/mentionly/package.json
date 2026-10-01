@@ -15,7 +15,8 @@
     "./style.css": "./dist/mentionly.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.zh.md"
   ],
   "repository": {
     "type": "git",
