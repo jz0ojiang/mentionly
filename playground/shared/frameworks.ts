@@ -29,7 +29,7 @@ export type FrameworkBases = Record<FrameworkId, string>
 
 /** 本地开发：playground 5173，examples/react 5180，examples/svelte 5181 */
 export const DEV_FRAMEWORK_BASES: FrameworkBases = {
-  vue: 'http://localhost:5173/',
+  vue: 'http://localhost:5173/mentionly/',
   react: 'http://localhost:5180/',
   svelte: 'http://localhost:5181/',
 }
