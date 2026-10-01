@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { watch, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import type { MentionItem } from '@mentionly/core'
+import type { MentionCoreIds, MentionItem } from '@mentionly/core'
 
 const props = withDefaults(defineProps<{
   items: MentionItem[]
   activeIndex: number
   loading: boolean
   query: string
+  /** core 生成的无障碍 id：根元素用 ids.listbox，选项用 ids.option(index) */
+  ids: MentionCoreIds
   hasMore?: boolean
   loadingMore?: boolean
 }>(), {
@@ -76,7 +78,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="listRef" class="mentionly-list" role="listbox" :aria-busy="loading || loadingMore">
+  <div ref="listRef" :id="ids.listbox" class="mentionly-list" role="listbox" :aria-busy="loading || loadingMore">
     <slot v-if="loading" name="loading">
       <div class="mentionly-list-loading">Loading...</div>
     </slot>
@@ -84,6 +86,7 @@ onBeforeUnmount(() => {
       <div
         v-for="(item, index) in items"
         :key="item.id"
+        :id="ids.option(index)"
         :class="['mentionly-list-item', { 'mentionly-list-item--active': index === activeIndex }]"
         role="option"
         :aria-selected="index === activeIndex"

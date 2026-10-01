@@ -4,6 +4,8 @@ import type {
   PopupPosition,
   ContentPart,
   DataPart,
+  Part,
+  MentionCoreIds,
   InsertMentionPayload,
   InsertMentionOptions,
   MentionHandlers,
@@ -21,7 +23,12 @@ export interface UseMentionReturn {
   query: Ref<string>
   activeTrigger: Ref<string | null>
   loading: Ref<boolean>
+  /** 数据源最近一次失败的错误对象；下次成功 / close() 后回到 null */
+  error: Ref<unknown | null>
   popupPosition: Ref<PopupPosition>
+
+  /** core 生成的无障碍元素 id：列表根元素 + 每个选项 */
+  ids: MentionCoreIds
 
   // ── 分页状态 ──
   /** 当前激活触发器是否还有下一页（仅分页触发器为 true） */
@@ -37,13 +44,16 @@ export interface UseMentionReturn {
   close: () => void
 
   // ── 内容序列化 ──
-  getParts: () => ContentPart[]
+  /** 2.0 输出格式：`TextPart | MentionPart` */
+  getParts: () => Part[]
+  /** @deprecated 将在 3.0 移除，请改用 `getParts()`。 */
   getDataParts: () => DataPart[]
   getPlainText: () => string
 
   // ── 编辑器操作 ──
   clear: () => void
-  setContent: (parts: ContentPart[]) => void
+  /** 接受 2.0 的 Part[]，也兼容 1.x 的 ContentPart[] */
+  setContent: (parts: Part[] | ContentPart[]) => void
   focus: () => void
   isEmpty: ComputedRef<boolean>
 

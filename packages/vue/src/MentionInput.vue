@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, computed } from 'vue'
-import type { MentionTrigger, ContentPart, DataPart, MentionItem, PopupMode, PopupScrollBehavior } from '@mentionly/core'
+import type { MentionTrigger, Part, MentionCoreIds, MentionItem, PopupMode, PopupScrollBehavior } from '@mentionly/core'
 import { useMention } from './useMention'
 import MentionList from './MentionList.vue'
 
@@ -28,8 +28,8 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  submit: [parts: DataPart[]]
-  change: [parts: ContentPart[]]
+  submit: [parts: Part[]]
+  change: [parts: Part[]]
 }>()
 
 defineSlots<{
@@ -41,9 +41,12 @@ defineSlots<{
     hasMore: boolean
     loadingMore: boolean
     loadMore: () => void
+    /** 自定义列表渲染时用它给 listbox / option 连线 a11y id */
+    ids: MentionCoreIds
   }) => any
   item?: (props: { item: MentionItem; active: boolean; select: () => void }) => any
   empty?: (props: { query: string }) => any
+  error?: (props: { error: unknown }) => any
   loading?: (props: {}) => any
   'loading-more'?: (props: {}) => any
   'inner-actions'?: (props: {
@@ -61,7 +64,7 @@ defineSlots<{
     clear: () => void
     isEmpty: boolean
     focus: () => void
-    getParts: () => ContentPart[]
+    getParts: () => Part[]
   }) => any
 }>()
 
@@ -73,6 +76,8 @@ const {
   query,
   activeTrigger,
   loading,
+  error,
+  ids,
   popupPosition,
   hasMore,
   loadingMore,
@@ -130,7 +135,7 @@ const wrappedHandlers = {
 
 function handleSubmit() {
   if (isEmpty.value) return
-  const parts = getDataParts()
+  const parts = getParts()
   emit('submit', parts)
   clear()
 }
@@ -170,6 +175,7 @@ defineExpose({
   setContent,
   insertMention,
   focus,
+  ids,
 })
 </script>
 
@@ -193,6 +199,11 @@ defineExpose({
       <slot name="inner-actions" :submit="handleSubmit" :clear="clear" :is-empty="isEmpty" />
     </div>
 
+    <!-- 数据源错误（error 非 null 时显示），可用 #error 自定义 -->
+    <div v-if="error !== null" class="mentionly-error" role="alert">
+      <slot name="error" :error="error">Failed to load suggestions.</slot>
+    </div>
+
     <!-- Teleport 下拉列表到 body -->
     <Teleport to="body" :disabled="!teleport">
       <div
@@ -209,6 +220,7 @@ defineExpose({
           :has-more="hasMore"
           :loading-more="loadingMore"
           :load-more="loadMore"
+          :ids="ids"
         >
           <MentionList
             :items="filteredItems"
@@ -217,6 +229,7 @@ defineExpose({
             :query="query"
             :has-more="hasMore"
             :loading-more="loadingMore"
+            :ids="ids"
             @select="select"
             @load-more="loadMore"
           >
@@ -365,6 +378,16 @@ defineExpose({
   text-align: center;
   color: #9ca3af;
   font-size: 13px;
+}
+
+.mentionly-error {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 12px;
 }
 
 .mentionly-list-more {

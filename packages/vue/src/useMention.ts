@@ -18,6 +18,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
   const query = ref('')
   const activeTrigger: Ref<string | null> = ref(null)
   const loading = ref(false)
+  const error = ref<unknown | null>(null)
   const loadingMore = ref(false)
   const hasMore = ref(false)
   const popupPosition: Ref<PopupPosition> = ref({ top: 0, left: 0 })
@@ -32,6 +33,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     query.value = s.query
     activeTrigger.value = s.activeTrigger
     loading.value = s.loading
+    error.value = s.error
     loadingMore.value = s.loadingMore
     hasMore.value = s.hasMore
     popupPosition.value = s.popupPosition
@@ -53,7 +55,8 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     core.setElement(null)
   })
 
-  // setOptions 覆盖全部字段（含 insertSpaceAfter，select() 会用到）
+  // setOptions 覆盖全部字段（含 insertSpaceAfter，select() 会用到）。
+  // flush:'sync'：在同一 tick 里改完 triggers 后立即序列化 / 选中，必须已经用上新配置。
   watch(
     () => ({
       triggers: options.triggers,
@@ -62,7 +65,7 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
       popupScrollBehavior: options.popupScrollBehavior,
     }),
     (next) => core.setOptions(next),
-    { deep: true },
+    { deep: true, flush: 'sync' },
   )
 
   return {
@@ -73,6 +76,8 @@ export function useMention(options: UseMentionOptions): UseMentionReturn {
     query,
     activeTrigger,
     loading,
+    error,
+    ids: core.ids,
     popupPosition,
     hasMore,
     loadingMore,
