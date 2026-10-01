@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, nextTick, ref } from 'vue'
 import MentionInput from '../src/MentionInput.vue'
-import type { MentionTrigger } from '@mentionly/core'
+import type { MentionItem, MentionTrigger } from '@mentionly/core'
 
 const triggers: MentionTrigger[] = [
   { char: '@', items: [{ id: '1', label: 'Alice' }] },
@@ -84,22 +84,18 @@ describe('MentionInput', () => {
     })
 
     expect(inserted).toBe(true)
+    // 2.0 输出：自定义 dataPart 不在 Part 里（它只进 mention span 的 dataset），
+    // 且默认追加的 NBSP 会被首尾 trim 去掉
     expect(vm.getParts()).toEqual([
       {
         type: 'mention',
-        triggeredBy: '',
+        trigger: '',
         id: 'ext-1',
         label: 'External Item',
-        dataPart: {
-          dataType: 'external_ref',
-          refId: 'ext-1',
-          displayName: 'External Item',
-          trigger: '',
-        },
       },
-      { type: 'text', content: '\u00A0' },
     ])
 
+    // getDataParts() 保留 1.x 的 dataPart 输出
     expect(vm.getDataParts()).toEqual([
       {
         type: 'data',
@@ -127,34 +123,19 @@ describe('MentionInput', () => {
     vm.insertMention({
       id: 'sel-1',
       label: 'Selection Context',
-      dataPart: (item: { id: string; label: string }) => ({
-        dataType: 'selection_ref',
-        sourceId: item.id,
-        title: item.label,
-      }),
+      trigger: '@',
+      data: { dataType: 'selection_ref', sourceId: 'sel-1', title: 'Selection Context' },
     }, { appendSpace: false })
 
     const parts = vm.getParts()
     expect(parts).toHaveLength(1)
     expect(parts[0]).toEqual({
       type: 'mention',
-      triggeredBy: '',
+      trigger: '@',
       id: 'sel-1',
       label: 'Selection Context',
-      dataPart: {
-        dataType: 'selection_ref',
-        sourceId: 'sel-1',
-        title: 'Selection Context',
-      },
+      data: { dataType: 'selection_ref', sourceId: 'sel-1', title: 'Selection Context' },
     })
-    expect(vm.getDataParts()).toEqual([
-      {
-        type: 'data',
-        dataType: 'selection_ref',
-        sourceId: 'sel-1',
-        title: 'Selection Context',
-      },
-    ])
   })
 
   // 把光标移到编辑器文本末尾（contenteditable 的选区在 jsdom 里需要手动设置）
@@ -234,5 +215,149 @@ describe('MentionInput', () => {
     expect(wrapper.find('.mentionly-dropdown').exists()).toBe(true)
     expect(wrapper.emitted('submit')).toBeUndefined()
     wrapper.unmount()
+  })
+
+  it('emits Part[] payloads on change and submit', async () => {
+    const wrapper = mount(MentionInput, { props: { triggers }, attachTo: document.body })
+    const editor = wrapper.find('.mentionly-editor')
+    setEditorText(editor.element as HTMLElement, 'hello')
+    await editor.trigger('input')
+
+    expect(wrapper.emitted('change')?.at(-1)).toEqual([[{ type: 'text', text: 'hello' }]])
+
+    editor.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await nextTick()
+
+    expect(wrapper.emitted('submit')?.at(-1)).toEqual([[{ type: 'text', text: 'hello' }]])
+    wrapper.unmount()
+  })
+
+  it('persists a trigger toData in the component output', async () => {
+    const toData = vi.fn((item: MentionItem) => ({ uri: item.uri, kind: item.kind }))
+    const toDataTriggers: MentionTrigger[] = [
+      { char: '@', items: [{ id: '1', label: 'Alice', uri: 'user:alice', kind: 'person' }], toData },
+    ]
+    const wrapper = mount(MentionInput, {
+      props: { triggers: toDataTriggers, teleport: false },
+      attachTo: document.body,
+    })
+    const editor = wrapper.find('.mentionly-editor')
+    setEditorText(editor.element as HTMLElement, '@al')
+    await editor.trigger('input')
+    await nextTick()
+
+    // jsdom 没有 execCommand：mock 成直接写入 innerHTML，与 core 测试同一做法
+    const editorEl = editor.element as HTMLElement
+    const originalExec = document.execCommand
+    document.execCommand = vi.fn((_command: string, _ui?: boolean, value?: string) => {
+      editorEl.innerHTML = value ?? ''
+      return true
+    }) as unknown as typeof document.execCommand
+
+    try {
+      await wrapper.find('.mentionly-list-item').trigger('mousedown')
+
+      expect(toData).toHaveBeenCalledOnce()
+      expect((wrapper.vm as any).getParts()).toEqual([
+        { type: 'mention', trigger: '@', id: '1', label: 'Alice', data: { uri: 'user:alice', kind: 'person' } },
+      ])
+    } finally {
+      document.execCommand = originalExec
+      wrapper.unmount()
+    }
+  })
+
+  it('renders a default error message and honors a custom #error slot', async () => {
+    const failing: MentionTrigger[] = [
+      { char: '@', items: () => Promise.reject(new Error('boom')) },
+    ]
+    const flushAsync = async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await nextTick()
+    }
+
+    const wrapper = mount(MentionInput, {
+      props: { triggers: failing, teleport: false },
+      attachTo: document.body,
+    })
+    const editor = wrapper.find('.mentionly-editor')
+    setEditorText(editor.element as HTMLElement, '@')
+    await editor.trigger('input')
+    await flushAsync()
+
+    const errorBox = wrapper.find('.mentionly-error')
+    expect(errorBox.exists()).toBe(true)
+    expect(errorBox.attributes('role')).toBe('alert')
+    expect(errorBox.text()).toContain('Failed to load suggestions.')
+    wrapper.unmount()
+
+    const custom = mount(MentionInput, {
+      props: { triggers: failing, teleport: false },
+      attachTo: document.body,
+      slots: { error: '<span class="custom-error">custom failure</span>' },
+    })
+    const customEditor = custom.find('.mentionly-editor')
+    setEditorText(customEditor.element as HTMLElement, '@')
+    await customEditor.trigger('input')
+    await flushAsync()
+
+    expect(custom.find('.mentionly-error .custom-error').text()).toBe('custom failure')
+    custom.unmount()
+  })
+
+  it('wires aria-controls / aria-activedescendant to the rendered listbox', async () => {
+    const twoTriggers: MentionTrigger[] = [
+      { char: '@', items: [{ id: '1', label: 'Alice' }, { id: '2', label: 'Bob' }] },
+    ]
+    const wrapper = mount(MentionInput, {
+      props: { triggers: twoTriggers, teleport: false },
+      attachTo: document.body,
+    })
+    const editor = wrapper.find('.mentionly-editor')
+    setEditorText(editor.element as HTMLElement, '@')
+    await editor.trigger('input')
+    await nextTick()
+
+    const controls = editor.attributes('aria-controls')
+    const listbox = wrapper.find('.mentionly-list')
+    expect(controls).toBeTruthy()
+    expect(listbox.attributes('id')).toBe(controls)
+    expect(listbox.attributes('role')).toBe('listbox')
+
+    const activeDescendant = editor.attributes('aria-activedescendant')
+    const activeOption = wrapper.find('.mentionly-list-item--active')
+    expect(activeOption.exists()).toBe(true)
+    expect(activeOption.attributes('id')).toBe(activeDescendant)
+    expect(activeOption.attributes('role')).toBe('option')
+    expect(activeOption.attributes('aria-selected')).toBe('true')
+    // aria-activedescendant 指向的元素必须真实存在于文档里
+    expect(document.getElementById(activeDescendant!)).toBe(activeOption.element)
+    wrapper.unmount()
+  })
+
+  it('gives two MentionInput instances distinct a11y ids', async () => {
+    const a = mount(MentionInput, { props: { triggers, teleport: false }, attachTo: document.body })
+    const b = mount(MentionInput, { props: { triggers, teleport: false }, attachTo: document.body })
+
+    const aEditor = a.find('.mentionly-editor')
+    const bEditor = b.find('.mentionly-editor')
+    setEditorText(aEditor.element as HTMLElement, '@')
+    await aEditor.trigger('input')
+    setEditorText(bEditor.element as HTMLElement, '@')
+    await bEditor.trigger('input')
+    await nextTick()
+
+    const aControls = aEditor.attributes('aria-controls')
+    const bControls = bEditor.attributes('aria-controls')
+    expect(aControls).toBeTruthy()
+    expect(bControls).toBeTruthy()
+    expect(aControls).not.toBe(bControls)
+    expect(a.find('.mentionly-list').attributes('id')).toBe(aControls)
+    expect(b.find('.mentionly-list').attributes('id')).toBe(bControls)
+
+    a.unmount()
+    b.unmount()
   })
 })

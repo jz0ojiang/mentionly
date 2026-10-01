@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, reactive } from 'vue'
 import { useMention } from '../src/useMention'
-import type { MentionItem, MentionTrigger } from '@mentionly/core'
+import type { MentionItem, MentionTrigger, UseMentionOptions } from '@mentionly/core'
 
 function createEditorWithText(text: string, cursorOffset = text.length) {
   const editor = document.createElement('div')
@@ -167,6 +167,24 @@ describe('useMention', () => {
 
     window.dispatchEvent(new Event('scroll'))
     expect(api.isOpen.value).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('picks up a triggers change synchronously within the same tick (flush: sync)', () => {
+    const options = reactive<UseMentionOptions>({
+      triggers: [{ char: '@', items: [{ id: '1', label: 'Alice' }] }],
+    })
+    const { api, wrapper } = mountUseMention(options)
+    const editor = createEditorWithText('#')
+    api.editorRef.value = editor
+
+    // 同一 tick 内替换 triggers 后立即触发输入：必须用新配置，而不是旧配置
+    options.triggers = [{ char: '#', items: [{ id: '2', label: 'tag' }] }]
+    api.handlers.input()
+
+    expect(api.isOpen.value).toBe(true)
+    expect(api.activeTrigger.value).toBe('#')
+    expect(api.filteredItems.value).toEqual([{ id: '2', label: 'tag' }])
     wrapper.unmount()
   })
 })
