@@ -84,7 +84,7 @@ export function Composer({ onSubmit }: { onSubmit: (parts: Part[]) => void }) {
 
 ## Building your own list
 
-The list UI is yours, so two details the Vue component handles internally are your job:
+The list UI is yours, so a few details the Vue component handles internally are your job:
 
 - **Select on click without losing focus.** Call `preventDefault()` on the option's `mousedown`
   (then select in `click`, or select directly in `mousedown`). Otherwise the editor blurs first,
@@ -94,7 +94,12 @@ The list UI is yours, so two details the Vue component handles internally are yo
   yourself when `hasMore` is true and the list's `scrollHeight <= clientHeight` (or render a
   "Load more" button).
 
-The examples in the repository implement both.
+- **Check `nativeEvent.defaultPrevented` in your own `onKeyDown`.** The core handles Enter / arrows
+  on the native event (for example Enter selects the active item while the list is open). React's
+  synthetic `e.defaultPrevented` does not reflect that, so a submit-on-Enter handler that checks it
+  would submit right after the selection. Read `e.nativeEvent.defaultPrevented` instead.
+
+The examples in the repository implement all of these.
 
 ## API
 
