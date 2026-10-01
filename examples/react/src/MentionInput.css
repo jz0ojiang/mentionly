@@ -1,0 +1,118 @@
+/* MentionInput 示例样式：复制这个文件到自己项目里改即可，类名都带 mi- 前缀避免冲突 */
+
+.mi-root {
+  position: relative;
+  width: 100%;
+}
+
+.mi-editor {
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid #d7dce5;
+  border-radius: 10px;
+  outline: none;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #1c2333;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mi-editor:focus {
+  border-color: #4f7cff;
+  box-shadow: 0 0 0 3px rgba(79, 124, 255, 0.16);
+}
+
+/* 占位符：编辑器为空时用 data-placeholder 显示 */
+.mi-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #9aa3b2;
+  pointer-events: none;
+}
+
+/* core 插入的 mention 节点固定使用 .mentionly-mention 类名 */
+.mi-editor .mentionly-mention {
+  display: inline;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #e3ecff;
+  color: #1d4ed8;
+  font-weight: 500;
+  white-space: nowrap;
+  user-select: all;
+}
+
+/* 候选列表：固定定位在编辑器正上方（聊天输入框常见做法） */
+.mi-popup {
+  position: fixed;
+  z-index: 40;
+  transform: translateY(-100%);
+  margin-top: -8px;
+}
+
+.mi-list {
+  max-height: 224px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #e6e9ef;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(16, 24, 40, 0.14);
+}
+
+.mi-option {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #1c2333;
+}
+
+.mi-option--active,
+.mi-option:hover {
+  background: #f1f4f9;
+}
+
+.mi-option-label {
+  font-weight: 500;
+}
+
+.mi-option-desc {
+  color: #8a93a3;
+  font-size: 12px;
+}
+
+.mi-hint {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #98a1b0;
+}
+
+.mi-hint--error {
+  color: #d14343;
+}
+
+.mi-more {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #5a7cf5;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mi-more:disabled {
+  color: #a9b1bf;
+  cursor: default;
+}
