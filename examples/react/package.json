@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Vite + React example for @mentionly/react",
+  "description": "React playground page for mentionly — a copyable @mentionly/react MentionInput plus the shared demo site.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

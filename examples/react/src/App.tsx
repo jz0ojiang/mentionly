@@ -1,92 +1,361 @@
-import { useState } from 'react'
-import { MentionInput } from './MentionInput'
-import type { MentionItem, MentionItemsResult, MentionPageInfo, MentionTrigger, Part } from '@mentionly/react'
-
-// ── 数据源 1：@ 用户（静态数组，立即过滤） ──
-const USERS: MentionItem[] = [
-  { id: 'u1', label: 'Alice', desc: '前端工程师' },
-  { id: 'u2', label: 'Bob', desc: '后端工程师' },
-  { id: 'u3', label: 'Carol', desc: '产品经理' },
-  { id: 'u4', label: 'David', desc: '设计师' },
-  { id: 'u5', label: 'Eve', desc: '数据分析师' },
-]
-
-// ── 数据源 2：# 话题（异步 + 分页，模拟远程搜索） ──
-const TOPICS: MentionItem[] = Array.from({ length: 23 }, (_, i) => ({
-  id: `t${i + 1}`,
-  label: `话题 ${String(i + 1).padStart(2, '0')}`,
-  desc: ['产品', '设计', '工程', '数据', '运营'][i % 5],
-}))
-
-async function searchTopics(query: string, page?: MentionPageInfo): Promise<MentionItemsResult> {
-  await new Promise((resolve) => setTimeout(resolve, 350))
-  const matched = TOPICS.filter((topic) => topic.label.includes(query))
-  const offset = page?.offset ?? 0
-  const limit = page?.limit ?? matched.length
-  return {
-    items: matched.slice(offset, offset + limit),
-    hasMore: offset + limit < matched.length,
-  }
-}
-
-/**
- * triggers 是模块级常量 → 引用永远稳定。
- * 如果写在组件里，请用 useMemo（或在开发模式下会看到提醒），否则每次渲染的新数组
- * 都会让 core 重新 setOptions 并关闭列表。
+/*
+ * Playground 的 React 页面：与 Vue playground/App.vue 的分区、布局、文案、演示数据逐项对应。
+ * - 界面文案来自共享层 @playground/shared（i18n.ts），演示数据 / triggers 来自 demo-data.ts
+ * - 右侧浮动目录的分区来自 sections.ts（不含 Vue 独有的「Deprecated 1.x API」）
+ * - 示例代码来自本应用的 src/code.ts（React 语法）
  */
-const TRIGGERS: MentionTrigger[] = [
-  {
-    char: '@',
-    items: USERS,
-    // toData 的结果会写进 MentionPart.data，提交时原样带出
-    toData: (item) => ({ kind: 'user', uri: `user:${item.id}` }),
-  },
-  {
-    char: '#',
-    items: searchTopics,
-    pagination: { pageSize: 6 },
-    debounce: 200,
-    toData: (item) => ({ kind: 'topic', topicId: item.id }),
-  },
-]
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { version } from '@mentionly/react'
+import type { MentionTrigger, Part, PopupMode, PopupScrollBehavior } from '@mentionly/react'
+import { MentionInput, type MentionInputHandle } from './MentionInput'
+import { CodeBlock } from './components/CodeBlock'
+import { FloatingSectionIndicator } from './components/FloatingSectionIndicator'
+import { FrameworkSwitch } from './components/FrameworkSwitch'
+import { detectLocale, alternateLocale } from '@playground/shared/locale'
+import { uiStrings, type Locale } from '@playground/shared/i18n'
+import { resolveSections } from '@playground/shared/sections'
+import {
+  parseCustomAtItems,
+  createDemoTriggers,
+  createCustomTriggerDemo,
+  createPaginationTrigger,
+  createInsertPayload,
+  getSavedParts,
+} from '@playground/shared/demo-data'
+import { code } from './code'
 
-interface Message {
-  id: number
-  parts: Part[]
-}
+// 分页（加载更多）演示：模拟一个有大量结果的远程数据源（模块级常量 = 引用稳定）
+const paginationDemo: MentionTrigger[] = [createPaginationTrigger()]
+
+const DEFAULT_CUSTOM_AT = 'John Smith, Alice Johnson, Michael Brown, Emily Davis, David Wilson'
 
 export function App() {
-  const [messages, setMessages] = useState<Message[]>([])
+  const inputRef = useRef<MentionInputHandle>(null)
+  const insertDemoRef = useRef<MentionInputHandle>(null)
+  const insertCount = useRef(0)
 
-  const handleSubmit = (parts: Part[]) => {
-    setMessages((prev) => [...prev, { id: Date.now(), parts }])
-  }
+  const [output, setOutput] = useState<Part[]>([])
+  const [popupMode, setPopupMode] = useState<PopupMode>('cursor')
+  const [popupScrollBehavior, setPopupScrollBehavior] = useState<PopupScrollBehavior>('reposition')
+  const [usageBlockEnter, setUsageBlockEnter] = useState(false)
+  const [customAtInput, setCustomAtInput] = useState(DEFAULT_CUSTOM_AT)
+
+  // ── i18n ──
+  // 初始语言看 ?lang= / 浏览器语言；切换只改内存状态（与 Vue 版一致），
+  // 框架切换链接会带上当前 lang（frameworkHref → withLangParam）
+  const [locale, setLocale] = useState<Locale>(() => detectLocale())
+
+  const t = useMemo(() => ({ ...uiStrings(locale), ...code[locale] }), [locale])
+
+  // 右侧浮动 TOC 跟踪的区块（顺序与文档顺序一致；不含 Vue 独有的 Deprecated 分区）
+  const tocSections = useMemo(() => resolveSections(uiStrings(locale), { includeDeprecated: false }), [locale])
+
+  // 自定义 @ 数据源
+  const customAtItems = useMemo(() => parseCustomAtItems(customAtInput), [customAtInput])
+
+  const triggers = useMemo(
+    () =>
+      createDemoTriggers(uiStrings(locale), customAtItems, {
+        clear: () => inputRef.current?.clear(),
+        help: () => alert(uiStrings(locale).helpMsg),
+      }),
+    [locale, customAtItems],
+  )
+
+  const customTriggerDemo = useMemo(() => createCustomTriggerDemo(uiStrings(locale)), [locale])
+
+  const onSubmit = useCallback((parts: Part[]) => {
+    setOutput(parts)
+    console.log('Submit:', parts)
+  }, [])
+
+  const onChange = useCallback((parts: Part[]) => {
+    console.log('Change:', parts)
+  }, [])
+
+  const onUsageEnter = useCallback(
+    (e: KeyboardEvent) => {
+      if (usageBlockEnter) e.preventDefault()
+    },
+    [usageBlockEnter],
+  )
+
+  const onUsageSubmit = useCallback((parts: Part[]) => {
+    console.log('Usage submit:', parts)
+  }, [])
+
+  const insertContextNode = useCallback(() => {
+    insertCount.current += 1
+    insertDemoRef.current?.insertMention(createInsertPayload(uiStrings(locale), insertCount.current))
+  }, [locale])
+
+  // 反序列化测试
+  const loadSaved = useCallback(() => {
+    inputRef.current?.setContent(getSavedParts(locale))
+  }, [locale])
 
   return (
-    <div className="app">
-      <div className="app-card">
-        <header className="app-header">
-          <h1>mentionly · React</h1>
-          <p>
-            输入 <code>@</code> 提及用户（静态列表），输入 <code>#</code> 提及话题（异步 + 分页）。
-            方向键选择，Enter 选中，Esc 关闭，列表关闭时 Enter 提交。
-          </p>
-        </header>
+    <div className="playground">
+      <div className="header">
+        <h1>
+          Mentionly Playground <span className="version">v{version}</span>
+        </h1>
+        <div className="header-tools">
+          <FrameworkSwitch locale={locale} current="react" />
+          <button className="lang-btn" onClick={() => setLocale(alternateLocale(locale))}>
+            {locale === 'en' ? '中文' : 'EN'}
+          </button>
+        </div>
+      </div>
+      <div className="header-actions">
+        <a
+          className="badge"
+          href="https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <img src="https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml/badge.svg" alt="tests" />
+        </a>
+        <a className="badge" href="https://www.npmjs.com/package/mentionly" target="_blank" rel="noreferrer">
+          <img src="https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm" alt="npm version" />
+        </a>
+        <a className="badge" href="https://www.npmjs.com/package/mentionly" target="_blank" rel="noreferrer">
+          <img src="https://img.shields.io/npm/dm/mentionly?color=10b981&label=downloads&logo=npm" alt="npm downloads" />
+        </a>
+        <a className="badge" href="https://github.com/jz0ojiang/mentionly" target="_blank" rel="noreferrer">
+          <img src="https://img.shields.io/badge/GitHub-Repo-111827?logo=github" alt="github repo" />
+        </a>
+      </div>
+      <p className="hint">
+        {t.hint[0]}
+        <code>@</code>
+        {t.hint[1]}
+        <code>#</code>
+        {t.hint[2]}
+        <code>/</code>
+        {t.hint[3]}
+      </p>
 
-        <div className="app-messages">
-          {messages.length === 0 ? (
-            <p className="app-empty">还没有提交内容。提交后会在这里看到 getParts() 返回的 Part[]。</p>
-          ) : (
-            messages.map((message) => (
-              <pre key={message.id} className="app-message">{JSON.stringify(message.parts, null, 2)}</pre>
-            ))
-          )}
+      <section id="sec-config" className="section">
+        <h2 className="section-title">Playground</h2>
+        <div className="controls">
+          <div className="mode-switch">
+            <label>
+              <span>{t.popupMode}</span>
+              <select value={popupMode} onChange={(e) => setPopupMode(e.target.value as PopupMode)}>
+                <option value="fixed">{t.popupFixed}</option>
+                <option value="cursor">{t.popupCursor}</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="mode-switch">
+            <label>
+              <span>{t.popupScroll}</span>
+              <select
+                value={popupScrollBehavior}
+                onChange={(e) => setPopupScrollBehavior(e.target.value as PopupScrollBehavior)}
+              >
+                <option value="reposition">{t.popupScrollReposition}</option>
+                <option value="close">{t.popupScrollClose}</option>
+                <option value="ignore">{t.popupScrollIgnore}</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="custom-at">
+            <label>
+              <span>{t.customAt}</span>
+              <input
+                className="custom-at-input"
+                value={customAtInput}
+                onChange={(e) => setCustomAtInput(e.target.value)}
+              />
+            </label>
+            <p className="custom-at-preview">
+              {t.customAtPreview(customAtItems.map((i) => i.label).join(locale === 'zh' ? '、' : ', '))}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-editor" className="section">
+        <h2 className="section-title">Editor</h2>
+        <div className="input-area">
+          <MentionInput
+            ref={inputRef}
+            triggers={triggers}
+            popupMode={popupMode}
+            popupScrollBehavior={popupScrollBehavior}
+            placeholder={t.placeholder}
+            onSubmit={onSubmit}
+            onChange={onChange}
+            renderInnerActions={({ submit, isEmpty }) => (
+              <div className="inner-actions">
+                <button className="send-btn" disabled={isEmpty} onClick={submit}>
+                  {t.send}
+                </button>
+              </div>
+            )}
+          >
+            {({ isEmpty, focus }) => (
+              <div className="extra-info">
+                <span>{isEmpty ? t.waiting : t.editing}</span>
+                <button className="focus-btn" onClick={focus}>
+                  {t.focusEditor}
+                </button>
+              </div>
+            )}
+          </MentionInput>
         </div>
 
-        <footer className="app-composer">
-          <MentionInput triggers={TRIGGERS} onSubmit={handleSubmit} />
-        </footer>
-      </div>
+        <div className="actions">
+          <button onClick={loadSaved}>{t.loadSaved}</button>
+          <button onClick={() => inputRef.current?.focus()}>{t.focus}</button>
+          <button onClick={() => inputRef.current?.clear()}>{t.clear}</button>
+        </div>
+      </section>
+
+      <section id="sec-output" className="section">
+        <h2 className="section-title">Submit Output</h2>
+        {output.length ? (
+          <div className="output">
+            <pre>{JSON.stringify(output, null, 2)}</pre>
+          </div>
+        ) : (
+          <div className="output-empty">{t.waiting}</div>
+        )}
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">{t.usageTitle}</h2>
+        <div className="usage">
+          <div id="sec-basic" className="usage-section">
+            <div className="usage-header">
+              <h4>{t.basicTitle}</h4>
+              <p>{t.basicDesc}</p>
+            </div>
+            <div className="usage-demo">
+              <MentionInput
+                triggers={triggers}
+                placeholder={t.placeholder}
+                popupScrollBehavior={popupScrollBehavior}
+                onSubmit={onUsageSubmit}
+              />
+            </div>
+            <CodeBlock code={t.basicCode} language="tsx" copyLabel={t.copy} copiedLabel={t.copied} />
+          </div>
+
+          <div id="sec-custom-trigger" className="usage-section">
+            <div className="usage-header">
+              <h4>{t.customTriggerTitle}</h4>
+              <p>{t.customTriggerDesc}</p>
+            </div>
+            <div className="usage-demo">
+              <MentionInput
+                triggers={customTriggerDemo}
+                placeholder={t.customTriggerPlaceholder}
+                popupScrollBehavior={popupScrollBehavior}
+              />
+            </div>
+            <CodeBlock code={t.customTriggerCode} language="tsx" copyLabel={t.copy} copiedLabel={t.copied} />
+          </div>
+
+          <div id="sec-advanced" className="usage-section">
+            <div className="usage-header">
+              <h4>{t.advancedTitle}</h4>
+              <p>{t.advancedDesc}</p>
+            </div>
+            <div className="usage-demo">
+              <div className="usage-controls">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={usageBlockEnter}
+                    onChange={(e) => setUsageBlockEnter(e.target.checked)}
+                  />
+                  <span>{t.streaming}</span>
+                </label>
+                <p className="streaming-note">{t.streamingNote}</p>
+              </div>
+              <MentionInput
+                triggers={triggers}
+                placeholder={t.placeholder}
+                popupScrollBehavior={popupScrollBehavior}
+                onEnter={onUsageEnter}
+                onSubmit={onUsageSubmit}
+                renderInnerActions={({ submit, isEmpty }) => (
+                  <div className="inner-actions">
+                    <button className="send-btn" disabled={isEmpty} onClick={submit}>
+                      {t.send}
+                    </button>
+                  </div>
+                )}
+              />
+            </div>
+            <CodeBlock code={t.advancedCode} language="tsx" copyLabel={t.copy} copiedLabel={t.copied} />
+          </div>
+
+          <div id="sec-avatar" className="usage-section">
+            <div className="usage-header">
+              <h4>{t.avatarTitle}</h4>
+              <p>{t.avatarDesc}</p>
+            </div>
+            <div className="usage-demo">
+              <MentionInput
+                triggers={triggers}
+                placeholder={t.placeholder}
+                popupScrollBehavior={popupScrollBehavior}
+                renderItem={({ item, active, select }) => (
+                  <div className={`mention-item${active ? ' active' : ''}`} onClick={select}>
+                    <span className="avatar">{item.label[0]}</span>
+                    <span>{item.label}</span>
+                  </div>
+                )}
+              />
+            </div>
+            <CodeBlock code={t.avatarCode} language="tsx" copyLabel={t.copy} copiedLabel={t.copied} />
+          </div>
+
+          <div id="sec-insert" className="usage-section">
+            <div className="usage-header">
+              <h4>{t.insertTitle}</h4>
+              <p>{t.insertDesc}</p>
+            </div>
+            <div className="usage-demo">
+              <MentionInput
+                ref={insertDemoRef}
+                triggers={triggers}
+                placeholder={t.insertPlaceholder}
+                popupScrollBehavior={popupScrollBehavior}
+              />
+              <div className="card-actions">
+                <button className="card-btn" onClick={insertContextNode}>
+                  {t.insertAction}
+                </button>
+              </div>
+            </div>
+            <CodeBlock code={t.insertCode} language="tsx" copyLabel={t.copy} copiedLabel={t.copied} />
+          </div>
+
+          <div id="sec-pagination" className="usage-section">
+            <div className="usage-header">
+              <h4>{t.paginationTitle}</h4>
+              <p>{t.paginationDesc}</p>
+            </div>
+            <div className="usage-demo">
+              <MentionInput
+                triggers={paginationDemo}
+                placeholder={t.paginationPlaceholder}
+                popupScrollBehavior={popupScrollBehavior}
+              />
+            </div>
+            <CodeBlock code={t.paginationCode} language="tsx" copyLabel={t.copy} copiedLabel={t.copied} />
+          </div>
+        </div>
+      </section>
+
+      <FloatingSectionIndicator sections={tocSections} />
     </div>
   )
 }
