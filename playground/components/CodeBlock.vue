@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import Prism from 'prismjs'
-import 'prismjs/themes/prism-okaidia.css'
+// 代码块的视觉样式与 prism 主题都在共享层：@playground/shared/styles.css
 
 const props = withDefaults(
   defineProps<{
@@ -54,41 +54,3 @@ watch(displayCode, async () => {
     <pre class="code-block"><code ref="codeEl" :class="`language-${language}`">{{ displayCode }}</code></pre>
   </div>
 </template>
-
-<style>
-.code-block {
-  font-size: 12px;
-  background: #0f172a;
-  color: #e2e8f0;
-  padding: 14px;
-  border-radius: 6px;
-  overflow-x: auto;
-  line-height: 1.5;
-}
-
-.code-block code,
-.code-block[class*="language-"] {
-  font-size: 12px;
-}
-
-.code-block-wrap {
-  position: relative;
-}
-
-.copy-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  border: 1px solid rgba(226, 232, 240, 0.3);
-  background: rgba(15, 23, 42, 0.75);
-  color: #e2e8f0;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.copy-btn:hover {
-  background: rgba(15, 23, 42, 0.9);
-}
-</style>

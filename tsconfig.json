@@ -16,6 +16,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
+      "@playground/shared": ["./playground/shared/index.ts"],
+      "@playground/shared/*": ["./playground/shared/*"],
       "mentionly": ["./packages/mentionly/src/index.ts"],
       "@mentionly/vue": ["./packages/vue/src/index.ts"],
       "@mentionly/core": ["./packages/core/src/index.ts"]
