@@ -28,3 +28,6 @@ jobs:
 
       - name: Build packages
         run: bun run build
+
+      - name: Build examples
+        run: bun run build:examples

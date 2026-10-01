@@ -9,11 +9,18 @@ Guidance for AI coding agents and human contributors working in this repository.
 handling, and serialization. Zero runtime dependencies; Vue 3 is a peer dependency. English
 docs: `README.md`, Chinese docs: `README.zh.md`.
 
-The repo is a **bun workspaces monorepo** with three publishable packages plus a local demo:
+The repo is a **bun workspaces monorepo** with five publishable packages, two local examples and a
+demo site:
 
-- `@mentionly/core` — framework-agnostic engine (no Vue, browser DOM only).
+- `@mentionly/core` — framework-agnostic engine (no framework, browser DOM only), plus the
+  `@mentionly/core/ai-sdk` and `@mentionly/core/mcp` conversion subpaths.
 - `@mentionly/vue` — thin Vue 3 adapter and ready-to-use components.
+- `@mentionly/react` — headless React hook (`useMention`); no published components.
+- `@mentionly/svelte` — headless Svelte 5 adapter (`createMention` + `use:mention`); no published
+  components.
 - `mentionly` — forwarding package: re-exports `@mentionly/vue` and ships `mentionly/style.css`.
+- `examples/react`, `examples/svelte` — private apps whose `MentionInput` components are meant to be
+  copied into user projects.
 
 ## Toolchain
 
@@ -27,14 +34,17 @@ Root scripts fan out across packages; run them from the repository root:
 - `bun run dev` — Vite dev server for `playground/`.
 - `bun run test` — Vitest in watch mode across all package projects.
 - `bun run test:ci` — Vitest single run; this is what CI (`.github/workflows/test.yml`) runs.
-- `bun run typecheck` — typechecks `packages/core`, `packages/vue`, `packages/mentionly`, then
+- `bun run typecheck` — typechecks every package (core, vue, mentionly, react, svelte), then
   `playground/` (`vue-tsc --noEmit`).
-- `bun run build` — builds `@mentionly/core`, then `@mentionly/vue`, then `mentionly` to each
-  package's `dist/` (ES + CJS + rolled-up `.d.ts`).
+- `bun run build` — builds core, vue, mentionly, react, svelte in that order to each package's
+  `dist/` (vite lib builds; svelte uses `svelte-package`).
+- `bun run build:examples` — builds both example apps (CI runs it too).
+- `bun run dev:react`, `bun run dev:svelte` — run the example apps.
 - `bun run build:playground` — builds the demo site to `playground-dist/`.
 
 Per-package scripts (`bun run --cwd packages/<name> <script>`) provide `build`, `test`,
-`test:ci` and `typecheck`. Build order matters: `core` before `vue` before `mentionly`.
+`test:ci` and `typecheck`. Build order matters: `core` first (the other packages read its `dist` types), `vue` before
+`mentionly`.
 
 ## Layout
 
@@ -54,8 +64,8 @@ Per-package scripts (`bun run --cwd packages/<name> <script>`) provide `build`, 
 - `playground/` — Vite demo and documentation site. Aliases in `vite.playground.ts` and the root
   `tsconfig.json` point `mentionly`, `@mentionly/vue` and `@mentionly/core` at package sources, so
   editing `packages/*/src` hot-reloads.
-- `.changeset/` — Changesets config. `@mentionly/core`, `@mentionly/vue` and `mentionly` are a
-  `fixed` group, so they version together.
+- `.changeset/` — Changesets config. All five packages are one `fixed` group, so they version
+  together.
 
 Package relationships are declared with plain semver ranges (for example `"^1.2.1"`), not the
 `workspace:` protocol; bun still links them to the local workspace packages.
