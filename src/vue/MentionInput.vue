@@ -102,6 +102,8 @@ const wrappedHandlers = {
     emit('change', getParts())
   },
   keydown: (e: KeyboardEvent) => {
+    // 输入法组词中：交给 IME 处理，不提交、不选中列表项、不 preventDefault
+    if (e.isComposing || e.keyCode === 229) return
     if (isOpen.value) {
       handlers.keydown(e)
       // 如果事件未被 preventDefault（列表空时 Enter/Tab 不会 prevent），继续处理

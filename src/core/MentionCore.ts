@@ -547,6 +547,8 @@ export class MentionCore {
   }
 
   private onKeydown = (e: KeyboardEvent): void => {
+    // 输入法组词中：交给 IME 处理，不导航、不选中、不 preventDefault
+    if (e.isComposing || e.keyCode === 229) return
     if (!this.state.isOpen) return
 
     this.batch(() => {

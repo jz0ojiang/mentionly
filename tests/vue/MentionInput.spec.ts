@@ -156,4 +156,64 @@ describe('MentionInput', () => {
       },
     ])
   })
+
+  // 把光标移到编辑器文本末尾（contenteditable 的选区在 jsdom 里需要手动设置）
+  function setEditorText(editor: HTMLElement, text: string) {
+    editor.textContent = text
+    const node = editor.firstChild as Text
+    const range = document.createRange()
+    range.setStart(node, text.length)
+    range.setEnd(node, text.length)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+  }
+
+  it('submits on Enter when not composing', async () => {
+    const wrapper = mount(MentionInput, { props: { triggers } })
+    const editor = wrapper.find('.mentionly-editor')
+    setEditorText(editor.element as HTMLElement, 'hello')
+    await editor.trigger('input')
+
+    editor.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await nextTick()
+
+    expect(wrapper.emitted('submit')).toBeTruthy()
+  })
+
+  it('does not submit on Enter while the IME is composing', async () => {
+    const wrapper = mount(MentionInput, { props: { triggers } })
+    const editor = wrapper.find('.mentionly-editor')
+    setEditorText(editor.element as HTMLElement, 'hello')
+    await editor.trigger('input')
+
+    const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    Object.defineProperty(ev, 'isComposing', { value: true })
+    editor.element.dispatchEvent(ev)
+    await nextTick()
+
+    expect(ev.defaultPrevented).toBe(false)
+    expect(wrapper.emitted('submit')).toBeUndefined()
+  })
+
+  it('does not select a list item on Enter while the IME is composing', async () => {
+    const wrapper = mount(MentionInput, {
+      props: { triggers, teleport: false },
+      attachTo: document.body,
+    })
+    const editor = wrapper.find('.mentionly-editor')
+    setEditorText(editor.element as HTMLElement, '@a')
+    await editor.trigger('input')
+    expect(wrapper.find('.mentionly-dropdown').exists()).toBe(true)
+
+    const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    Object.defineProperty(ev, 'isComposing', { value: true })
+    editor.element.dispatchEvent(ev)
+    await nextTick()
+
+    expect(ev.defaultPrevented).toBe(false)
+    expect(wrapper.find('.mentionly-dropdown').exists()).toBe(true)
+    expect(wrapper.emitted('submit')).toBeUndefined()
+    wrapper.unmount()
+  })
 })

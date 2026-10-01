@@ -515,6 +515,39 @@ describe('MentionCore — keyboard navigation', () => {
     expect(core.getState().activeIndex).toBe(2) // wrap around
   })
 
+  it('ignores Enter while the IME is composing (no select, no preventDefault)', () => {
+    const core = makeCore({
+      triggers: [{ char: '@', items: [{ id: '1', label: 'a' }, { id: '2', label: 'b' }] }],
+    })
+    core.setElement(createEditorWithText('@'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+
+    const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    Object.defineProperty(ev, 'isComposing', { value: true })
+    core.handlers.keydown(ev)
+
+    expect(ev.defaultPrevented).toBe(false)
+    expect(core.getState().isOpen).toBe(true)
+    expect(core.getState().activeIndex).toBe(0)
+  })
+
+  it('ignores keyCode 229 (IME) keydown', () => {
+    const core = makeCore({
+      triggers: [{ char: '@', items: [{ id: '1', label: 'a' }, { id: '2', label: 'b' }] }],
+    })
+    core.setElement(createEditorWithText('@'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+
+    const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    Object.defineProperty(ev, 'keyCode', { value: 229 })
+    core.handlers.keydown(ev)
+
+    expect(ev.defaultPrevented).toBe(false)
+    expect(core.getState().isOpen).toBe(true)
+  })
+
   it('Escape closes the popup', () => {
     const core = makeCore({ triggers: [{ char: '@', items: [{ id: '1', label: 'a' }] }] })
     core.setElement(createEditorWithText('@'))
