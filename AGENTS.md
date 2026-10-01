@@ -19,8 +19,9 @@ demo site:
 - `@mentionly/svelte` — headless Svelte 5 adapter (`createMention` + `use:mention`); no published
   components.
 - `mentionly` — forwarding package: re-exports `@mentionly/vue` and ships `mentionly/style.css`.
-- `examples/react`, `examples/svelte` — private apps whose `MentionInput` components are meant to be
-  copied into user projects.
+- `examples/react`, `examples/svelte` — the React and Svelte pages of the playground site. Their
+  `src/MentionInput.*` components only depend on the framework adapter and their own CSS, so users
+  can copy them into their projects.
 
 ## Toolchain
 
@@ -40,7 +41,9 @@ Root scripts fan out across packages; run them from the repository root:
   `dist/` (vite lib builds; svelte uses `svelte-package`).
 - `bun run build:examples` — builds both example apps (CI runs it too).
 - `bun run dev:react`, `bun run dev:svelte` — run the example apps.
-- `bun run build:playground` — builds the demo site to `playground-dist/`.
+- `bun run build:playground` — builds the demo site to `playground-dist/`: the Vue page at the root
+  (base `/mentionly/`), then `examples/react` and `examples/svelte` via their `build:pages` scripts
+  into `playground-dist/react/` and `playground-dist/svelte/`.
 
 Per-package scripts (`bun run --cwd packages/<name> <script>`) provide `build`, `test`,
 `test:ci` and `typecheck`. Build order matters: `core` first (the other packages read its `dist` types), `vue` before
@@ -62,9 +65,13 @@ Per-package scripts (`bun run --cwd packages/<name> <script>`) provide `build`, 
   `src/style.css` re-imports `@mentionly/vue/style.css` so the build emits `dist/mentionly.css`
   (`vite.style.config.ts`).
 - `packages/*/tests/` — Vitest specs (jsdom environment), included in each package's typecheck.
-- `playground/` — Vite demo and documentation site. Aliases in `vite.playground.ts` and the root
-  `tsconfig.json` point `mentionly`, `@mentionly/vue` and `@mentionly/core` at package sources, so
-  editing `packages/*/src` hot-reloads.
+- `playground/` — the Vue page of the demo and documentation site. Aliases in `vite.playground.ts`
+  and the root `tsconfig.json` point `mentionly`, `@mentionly/vue` and `@mentionly/core` at package
+  sources, so editing `packages/*/src` hot-reloads.
+- `playground/shared/` — framework-agnostic layer used by all three playground pages (imported as
+  `@playground/shared`): styles, en/zh copy, locale detection, demo data and triggers, section list,
+  framework switcher links. Change copy, styles or demo data here once; each page only owns its
+  components and its code snippets (`playground/code.ts`, `examples/*/src/code.ts`).
 - `.changeset/` — Changesets config. All five packages are one `fixed` group, so they version
   together.
 
