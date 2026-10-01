@@ -9,17 +9,17 @@
 
 原子 mention 实体、异步与分页数据源、输入法（IME）处理与序列化 —— core 零运行时依赖。
 
-[在线演示](https://im0o.top/mentionly?lang=zh) | [English](./README.md) | [1.x 迁移指南](./MIGRATION.md)
+[在线演示](https://im0o.top/mentionly?lang=zh) | [English](https://github.com/jz0ojiang/mentionly/blob/main/README.md) | [1.x 迁移指南](https://github.com/jz0ojiang/mentionly/blob/main/MIGRATION.md)
 
 ## 包一览
 
 | 包 | 是什么 | 安装 | peer 依赖 |
 |----|--------|------|-----------|
-| [`@mentionly/core`](./packages/core) | 框架无关引擎：触发检测、异步/分页数据源、DOM 序列化、键盘与 IME 处理。同时提供 `./ai-sdk` 与 `./mcp` 转换子路径。 | `npm install @mentionly/core` | 无 |
-| [`@mentionly/vue`](./packages/vue) | 薄 Vue 3 适配层：`useMention` composable，以及开箱即用的 `MentionInput` / `MentionList` 组件。 | `npm install @mentionly/vue` | `vue` `^3.3.0` |
-| [`@mentionly/react`](./packages/react) | React headless hook（`useMention`），基于 `useSyncExternalStore`。不发布组件。 | `npm install @mentionly/react` | `react` `>=18` |
-| [`@mentionly/svelte`](./packages/svelte) | Svelte 5 headless 适配层：`createMention()` 与 `use:mention` action。不发布组件。 | `npm install @mentionly/svelte` | `svelte` `^5.0.0` |
-| [`mentionly`](./packages/mentionly) | 转发包：重新导出 `@mentionly/vue`，并附带 `mentionly/style.css`。1.x 用户可无缝升级。 | `npm install mentionly` | `vue` `^3.3.0` |
+| [`@mentionly/core`](https://github.com/jz0ojiang/mentionly/tree/main/packages/core) | 框架无关引擎：触发检测、异步/分页数据源、DOM 序列化、键盘与 IME 处理。同时提供 `./ai-sdk` 与 `./mcp` 转换子路径。 | `npm install @mentionly/core` | 无 |
+| [`@mentionly/vue`](https://github.com/jz0ojiang/mentionly/tree/main/packages/vue) | 薄 Vue 3 适配层：`useMention` composable，以及开箱即用的 `MentionInput` / `MentionList` 组件。 | `npm install @mentionly/vue` | `vue` `^3.3.0` |
+| [`@mentionly/react`](https://github.com/jz0ojiang/mentionly/tree/main/packages/react) | React headless hook（`useMention`），基于 `useSyncExternalStore`。不发布组件。 | `npm install @mentionly/react` | `react` `>=18` |
+| [`@mentionly/svelte`](https://github.com/jz0ojiang/mentionly/tree/main/packages/svelte) | Svelte 5 headless 适配层：`createMention()` 与 `use:mention` action。不发布组件。 | `npm install @mentionly/svelte` | `svelte` `^5.0.0` |
+| [`mentionly`](https://github.com/jz0ojiang/mentionly/tree/main/packages/mentionly) | 转发包：重新导出 `@mentionly/vue`，并附带 `mentionly/style.css`。1.x 用户可无缝升级。 | `npm install mentionly` | `vue` `^3.3.0` |
 
 5 个包统一版本发布。
 
@@ -179,7 +179,7 @@ export function Composer() {
 `setContent` / `focus` / `insertMention` 和底层 `core`。
 
 一个完整、可直接复制的组件（键盘提交、高亮项滚动入可视区、分页、错误状态）在
-[`examples/react/src/MentionInput.tsx`](./examples/react/src/MentionInput.tsx)。把这个文件连同
+[`examples/react/src/MentionInput.tsx`](https://github.com/jz0ojiang/mentionly/blob/main/examples/react/src/MentionInput.tsx)。把这个文件连同
 `MentionInput.css` 拷进你的项目，改掉 `mi-*` 类名即可。
 
 ## 快速开始（Svelte 5）
@@ -221,7 +221,7 @@ export function Composer() {
 
 `createMention()` 返回 `state`（core 快照的 `$state` 镜像）、`ids`、`mention`（action）、
 `core`、`setOptions`，以及与其他适配层一致的方法集合。一个完整、可直接复制的组件在
-[`examples/svelte/src/MentionInput.svelte`](./examples/svelte/src/MentionInput.svelte)。
+[`examples/svelte/src/MentionInput.svelte`](https://github.com/jz0ojiang/mentionly/blob/main/examples/svelte/src/MentionInput.svelte)。
 
 ## 输出格式
 
@@ -255,7 +255,7 @@ core.getPlainText()  // 'hello @Alice' —— 文本 + 每个 mention 的 trigge
   `getParts()` 会把它作为 `data` 返回，所以即使原始条目已经不存在，mention 依然可以正确序列化。
 - **`getParts()` 会规范化** DOM：合并相邻文本、把默认插入在 mention 后的不换行空格（NBSP）
   转成普通空格，并去掉首尾空白与空文本片段。
-- **`setContent(parts)`** 从 `Part[]`（或 1.x 的 `ContentPart[]`，见[迁移指南](./MIGRATION.md)）
+- **`setContent(parts)`** 从 `Part[]`（或 1.x 的 `ContentPart[]`，见[迁移指南](https://github.com/jz0ojiang/mentionly/blob/main/MIGRATION.md)）
   还原编辑器，因此 `setContent(getParts())` 可以往返。
 
 ## 与 AI / Agent 生态互操作
@@ -490,8 +490,8 @@ core 会在编辑器元素上设置并维护 combobox 相关属性：
 ## 从 1.x 迁移
 
 `mentionly` 仍然可用（转发 `@mentionly/vue`），但输出格式与部分 API 有变化。
-每一条变更及前后代码对比见 **[MIGRATION.md](./MIGRATION.md)**。
+每一条变更及前后代码对比见 **[MIGRATION.md](https://github.com/jz0ojiang/mentionly/blob/main/MIGRATION.md)**。
 
 ## 许可
 
-[MIT](./LICENSE)
+[MIT](https://github.com/jz0ojiang/mentionly/blob/main/LICENSE)

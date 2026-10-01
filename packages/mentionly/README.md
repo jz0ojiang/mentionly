@@ -10,17 +10,17 @@ Mention input for AI chat scenarios: a framework-agnostic `contenteditable` engi
 Atomic mention entities, async and paginated data sources, IME handling and serialization — with
 zero runtime dependencies in the core.
 
-[Live Demo](https://im0o.top/mentionly) | [中文文档](./README.zh.md) | [Migrating from 1.x](./MIGRATION.md)
+[Live Demo](https://im0o.top/mentionly) | [中文文档](https://github.com/jz0ojiang/mentionly/blob/main/README.zh.md) | [Migrating from 1.x](https://github.com/jz0ojiang/mentionly/blob/main/MIGRATION.md)
 
 ## Packages
 
 | Package | What it is | Install | Peer dependency |
 |---------|------------|---------|-----------------|
-| [`@mentionly/core`](./packages/core) | Framework-agnostic engine: trigger detection, async/paginated sources, DOM serialization, keyboard + IME handling. Also ships the `./ai-sdk` and `./mcp` converters. | `npm install @mentionly/core` | none |
-| [`@mentionly/vue`](./packages/vue) | Thin Vue 3 adapter: the `useMention` composable plus ready-to-use `MentionInput` and `MentionList` components. | `npm install @mentionly/vue` | `vue` `^3.3.0` |
-| [`@mentionly/react`](./packages/react) | Headless React hook (`useMention`), built on `useSyncExternalStore`. No published components. | `npm install @mentionly/react` | `react` `>=18` |
-| [`@mentionly/svelte`](./packages/svelte) | Headless Svelte 5 adapter: `createMention()` plus the `use:mention` action. No published components. | `npm install @mentionly/svelte` | `svelte` `^5.0.0` |
-| [`mentionly`](./packages/mentionly) | Forwarding package: re-exports `@mentionly/vue` and ships `mentionly/style.css`. Drop-in upgrade for 1.x users. | `npm install mentionly` | `vue` `^3.3.0` |
+| [`@mentionly/core`](https://github.com/jz0ojiang/mentionly/tree/main/packages/core) | Framework-agnostic engine: trigger detection, async/paginated sources, DOM serialization, keyboard + IME handling. Also ships the `./ai-sdk` and `./mcp` converters. | `npm install @mentionly/core` | none |
+| [`@mentionly/vue`](https://github.com/jz0ojiang/mentionly/tree/main/packages/vue) | Thin Vue 3 adapter: the `useMention` composable plus ready-to-use `MentionInput` and `MentionList` components. | `npm install @mentionly/vue` | `vue` `^3.3.0` |
+| [`@mentionly/react`](https://github.com/jz0ojiang/mentionly/tree/main/packages/react) | Headless React hook (`useMention`), built on `useSyncExternalStore`. No published components. | `npm install @mentionly/react` | `react` `>=18` |
+| [`@mentionly/svelte`](https://github.com/jz0ojiang/mentionly/tree/main/packages/svelte) | Headless Svelte 5 adapter: `createMention()` plus the `use:mention` action. No published components. | `npm install @mentionly/svelte` | `svelte` `^5.0.0` |
+| [`mentionly`](https://github.com/jz0ojiang/mentionly/tree/main/packages/mentionly) | Forwarding package: re-exports `@mentionly/vue` and ships `mentionly/style.css`. Drop-in upgrade for 1.x users. | `npm install mentionly` | `vue` `^3.3.0` |
 
 All five packages are versioned together.
 
@@ -182,7 +182,7 @@ the a11y `ids`, plus `select` / `loadMore` / `close` / `getParts` / `getDataPart
 `getPlainText` / `clear` / `setContent` / `focus` / `insertMention` and the underlying `core`.
 
 A complete, copyable component — keyboard submit, scroll-into-view, pagination and error state —
-lives in [`examples/react/src/MentionInput.tsx`](./examples/react/src/MentionInput.tsx). Copy that
+lives in [`examples/react/src/MentionInput.tsx`](https://github.com/jz0ojiang/mentionly/blob/main/examples/react/src/MentionInput.tsx). Copy that
 file plus `MentionInput.css` into your project and restyle the `mi-*` class names.
 
 ## Quick start (Svelte 5)
@@ -225,7 +225,7 @@ file plus `MentionInput.css` into your project and restyle the `mi-*` class name
 `createMention()` returns `state` (a `$state` mirror of the core snapshot), `ids`, `mention`
 (the action), `core`, `setOptions`, and the same method set as the other adapters. A complete,
 copyable component lives in
-[`examples/svelte/src/MentionInput.svelte`](./examples/svelte/src/MentionInput.svelte).
+[`examples/svelte/src/MentionInput.svelte`](https://github.com/jz0ojiang/mentionly/blob/main/examples/svelte/src/MentionInput.svelte).
 
 ## Output format
 
@@ -262,7 +262,7 @@ core.getPlainText()  // 'hello @Alice' — text plus trigger + label for each me
   after a mention by default) become regular spaces, and leading/trailing whitespace plus empty
   text parts are trimmed away.
 - **`setContent(parts)`** restores the editor from a `Part[]` (or a legacy 1.x `ContentPart[]`,
-  see the [migration guide](./MIGRATION.md)), so `setContent(getParts())` round-trips.
+  see the [migration guide](https://github.com/jz0ojiang/mentionly/blob/main/MIGRATION.md)), so `setContent(getParts())` round-trips.
 
 ## AI and agent interoperability
 
@@ -504,8 +504,8 @@ When an async data source rejects, the core exposes it instead of throwing:
 ## Migrating from 1.x
 
 `mentionly` keeps working as a forwarding package, but parts of the output format and some APIs
-changed. See **[MIGRATION.md](./MIGRATION.md)** for every change with before/after code.
+changed. See **[MIGRATION.md](https://github.com/jz0ojiang/mentionly/blob/main/MIGRATION.md)** for every change with before/after code.
 
 ## License
 
-[MIT](./LICENSE)
+[MIT](https://github.com/jz0ojiang/mentionly/blob/main/LICENSE)
