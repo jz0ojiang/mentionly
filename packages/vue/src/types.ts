@@ -7,7 +7,7 @@ import type {
   InsertMentionPayload,
   InsertMentionOptions,
   MentionHandlers,
-} from '../core/types'
+} from '@mentionly/core'
 
 /** useMention 返回值（Vue adapter 特有：状态以 ref / computed 暴露） */
 export interface UseMentionReturn {

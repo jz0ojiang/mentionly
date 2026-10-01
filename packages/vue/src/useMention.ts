@@ -1,6 +1,6 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
-import { MentionCore } from '../core/MentionCore'
-import type { UseMentionOptions, MentionItem, PopupPosition, MentionState } from '../core/types'
+import { MentionCore } from '@mentionly/core'
+import type { UseMentionOptions, MentionItem, PopupPosition, MentionState } from '@mentionly/core'
 import type { UseMentionReturn } from './types'
 
 /**

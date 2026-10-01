@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { MentionCore } from '../../src/core/MentionCore'
-import type { MentionItem, MentionState, ContentPart } from '../../src/core/types'
+import { MentionCore } from '../src/MentionCore'
+import type { MentionItem, MentionState, ContentPart } from '../src/types'
 
 // ── 测试夹具 ──────────────────────────────────────────────
 // 这些用例完全脱离 Vue：直接 new MentionCore，驱动 handlers/方法，

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { createMentionSpan, parseDOMToParts, contentPartsToDataParts, restoreContent } from '../../src/core/utils'
-import type { ContentPart, MentionTrigger } from '../../src/core/types'
+import { createMentionSpan, parseDOMToParts, contentPartsToDataParts, restoreContent } from '../src/utils'
+import type { ContentPart, MentionTrigger } from '../src/types'
 
 describe('utils', () => {
   it('parses DOM to parts with mentions and newlines', () => {

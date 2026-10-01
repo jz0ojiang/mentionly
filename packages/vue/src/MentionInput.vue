@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, computed } from 'vue'
-import type { MentionTrigger, ContentPart, DataPart, MentionItem, PopupMode, PopupScrollBehavior } from '../core/types'
+import type { MentionTrigger, ContentPart, DataPart, MentionItem, PopupMode, PopupScrollBehavior } from '@mentionly/core'
 import { useMention } from './useMention'
 import MentionList from './MentionList.vue'
 

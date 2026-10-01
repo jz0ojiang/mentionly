@@ -1,0 +1,2 @@
+/* 复用 @mentionly/vue 构建产出的样式，保持 `import 'mentionly/style.css'` 的样式内容不变。 */
+@import '@mentionly/vue/style.css';

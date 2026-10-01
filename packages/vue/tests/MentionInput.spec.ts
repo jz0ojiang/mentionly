@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, nextTick, ref } from 'vue'
-import MentionInput from '../../src/vue/MentionInput.vue'
-import type { MentionTrigger } from '../../src/core/types'
+import MentionInput from '../src/MentionInput.vue'
+import type { MentionTrigger } from '@mentionly/core'
 
 const triggers: MentionTrigger[] = [
   { char: '@', items: [{ id: '1', label: 'Alice' }] },

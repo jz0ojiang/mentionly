@@ -5,7 +5,6 @@
     "module": "ESNext",
     "moduleDetection": "force",
     "jsx": "preserve",
-    "allowJs": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -16,11 +15,9 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
-      "mentionly": ["./packages/mentionly/src/index.ts"],
-      "@mentionly/vue": ["./packages/vue/src/index.ts"],
-      "@mentionly/core": ["./packages/core/src/index.ts"]
+      "@mentionly/core": ["../core/src/index.ts"]
     }
   },
-  "include": ["playground/**/*"],
-  "exclude": ["node_modules", "dist", "playground-dist"]
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
