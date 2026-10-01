@@ -1,0 +1,21 @@
+:root {
+  --accent: #4f7cff;
+  --surface: #ffffff;
+  --border: #e2e6ee;
+  --text: #1f2430;
+  --muted: #6b7385;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4f6fb;
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
