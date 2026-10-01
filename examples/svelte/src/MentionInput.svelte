@@ -47,11 +47,20 @@
     mention.clear()
   }
 
+  let listEl: HTMLUListElement | undefined = $state()
+
   function handleScroll(event: Event) {
     const el = event.currentTarget as HTMLElement
     if (!mention.state.hasMore || mention.state.loadingMore) return
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) mention.loadMore()
   }
+
+  // 第一页撑不满列表时不会出现滚动条，滚动事件永远不会触发，所以内容不足一屏就直接加载下一页
+  $effect(() => {
+    const { isOpen, hasMore, loading, loadingMore, filteredItems } = mention.state
+    if (!listEl || !isOpen || !hasMore || loading || loadingMore || filteredItems.length === 0) return
+    if (listEl.scrollHeight <= listEl.clientHeight + 1) mention.loadMore()
+  })
 
   function pick(item: MentionItem) {
     mention.select(item)
@@ -105,6 +114,7 @@
         id={mention.ids.listbox}
         class="list"
         role="listbox"
+        bind:this={listEl}
         onscroll={handleScroll}
       >
         {#each mention.state.filteredItems as item, index (item.id)}
@@ -115,6 +125,7 @@
             class:active={index === mention.state.activeIndex}
             role="option"
             aria-selected={index === mention.state.activeIndex}
+            onmousedown={(e) => e.preventDefault()}
             onclick={() => pick(item)}
           >
             {#if item.avatar}

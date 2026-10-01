@@ -210,6 +210,7 @@ export function Composer() {
         id={mention.ids.option(index)}
         role="option"
         aria-selected={index === mention.state.activeIndex}
+        onmousedown={(e) => e.preventDefault()}
         onclick={() => mention.select(item)}
       >
         {item.label}

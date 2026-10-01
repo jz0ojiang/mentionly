@@ -82,6 +82,20 @@ export function Composer({ onSubmit }: { onSubmit: (parts: Part[]) => void }) {
 }
 ```
 
+## Building your own list
+
+The list UI is yours, so two details the Vue component handles internally are your job:
+
+- **Select on click without losing focus.** Call `preventDefault()` on the option's `mousedown`
+  (then select in `click`, or select directly in `mousedown`). Otherwise the editor blurs first,
+  the core closes the list on blur, and the click selects nothing.
+- **Fill the first page.** Paginated sources load the next page when the list scrolls near its
+  bottom. If the first page does not overflow the list, it can never scroll, so call `loadMore()`
+  yourself when `hasMore` is true and the list's `scrollHeight <= clientHeight` (or render a
+  "Load more" button).
+
+The examples in the repository implement both.
+
 ## API
 
 ### `useMention(options: MentionCoreOptions)`

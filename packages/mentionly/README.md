@@ -213,6 +213,7 @@ file plus `MentionInput.css` into your project and restyle the `mi-*` class name
         id={mention.ids.option(index)}
         role="option"
         aria-selected={index === mention.state.activeIndex}
+        onmousedown={(e) => e.preventDefault()}
         onclick={() => mention.select(item)}
       >
         {item.label}
