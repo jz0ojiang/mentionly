@@ -206,6 +206,8 @@ export class MentionCore {
     for (const trigger of triggers) {
       const idx = text.lastIndexOf(trigger.char)
       if (idx === -1) continue
+      // 边界检查：默认要求触发符处于行首或紧跟空白（含 NBSP），避免 `a@b.com` 误触发
+      if (!trigger.allowMidWord && idx > 0 && !/\s/.test(text[idx - 1]!)) continue
       const afterTrigger = text.slice(idx + trigger.char.length)
       if (/\s/.test(afterTrigger)) continue
       if (!bestMatch || idx > bestMatch.index) {

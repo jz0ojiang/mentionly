@@ -41,6 +41,13 @@ export interface MentionTrigger {
   mode?: TriggerMode
 
   /**
+   * 是否允许触发符出现在词中间（前面不是空白或行首）。默认 false：只有位于文本节点
+   * 开头（idx === 0）或前一个字符为空白（/\s/，含 NBSP）时才算命中，避免 `a@b.com`
+   * 这类邮箱 / 路径误触发列表；设为 true 时恢复旧行为（不检查边界）。
+   */
+  allowMidWord?: boolean
+
+  /**
    * 数据源。支持：
    * - 静态数组
    * - 同步过滤函数

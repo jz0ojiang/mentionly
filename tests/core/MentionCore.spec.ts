@@ -175,6 +175,54 @@ describe('MentionCore — trigger detection', () => {
   })
 })
 
+// ── 触发符边界 ────────────────────────────────────────────
+describe('MentionCore — trigger word boundary', () => {
+  const items = [{ id: '1', label: 'Alice' }]
+
+  it('does not open for a mid-word trigger (a@b)', () => {
+    const core = makeCore({ triggers: [{ char: '@', items }] })
+    core.setElement(createEditorWithText('a@b'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(false)
+    expect(core.getState().activeTrigger).toBe(null)
+  })
+
+  it('opens when the trigger follows whitespace (a @b)', () => {
+    const core = makeCore({ triggers: [{ char: '@', items }] })
+    core.setElement(createEditorWithText('a @b'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+    expect(core.getState().activeTrigger).toBe('@')
+    expect(core.getState().query).toBe('b')
+  })
+
+  it('opens when the trigger starts the line (@b)', () => {
+    const core = makeCore({ triggers: [{ char: '@', items }] })
+    core.setElement(createEditorWithText('@b'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+    expect(core.getState().activeTrigger).toBe('@')
+    expect(core.getState().query).toBe('b')
+  })
+
+  it('treats NBSP as a boundary (a\u00A0@b)', () => {
+    const core = makeCore({ triggers: [{ char: '@', items }] })
+    core.setElement(createEditorWithText('a\u00A0@b'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+    expect(core.getState().activeTrigger).toBe('@')
+  })
+
+  it('opens for a mid-word trigger when allowMidWord is true', () => {
+    const core = makeCore({ triggers: [{ char: '@', items, allowMidWord: true }] })
+    core.setElement(createEditorWithText('a@b'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+    expect(core.getState().activeTrigger).toBe('@')
+    expect(core.getState().query).toBe('b')
+  })
+})
+
 // ── 选中 & 序列化 ─────────────────────────────────────────
 describe('MentionCore — selection & serialization', () => {
   it('select() inserts via execCommand and closes', () => {

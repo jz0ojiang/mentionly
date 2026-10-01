@@ -116,6 +116,7 @@ function send() {
 interface MentionTrigger {
   char: string                    // 触发字符
   mode?: 'inline' | 'command'     // 默认 'inline'
+  allowMidWord?: boolean          // 允许触发符出现在词中间，默认 false（需行首或前一个字符为空白）
   items: MentionItem[]            // 静态数组
     | ((query: string, page?: { offset: number; limit: number })   // 或函数
         => MentionItemsResult | Promise<MentionItemsResult>)
