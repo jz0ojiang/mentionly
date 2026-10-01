@@ -116,7 +116,7 @@ function send() {
 interface MentionTrigger {
   char: string                    // Trigger character
   mode?: 'inline' | 'command'     // Default 'inline'
-  allowMidWord?: boolean          // Allow trigger char mid-word, default false (requires start-of-line or preceding whitespace)
+  allowMidWord?: boolean          // Allow trigger right after an ASCII word char, default false (a@b.com does not trigger; CJK/punctuation/whitespace still trigger)
   items: MentionItem[]            // Static array
     | ((query: string, page?: { offset: number; limit: number })   // or function
         => MentionItemsResult | Promise<MentionItemsResult>)

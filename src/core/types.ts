@@ -41,9 +41,10 @@ export interface MentionTrigger {
   mode?: TriggerMode
 
   /**
-   * 是否允许触发符出现在词中间（前面不是空白或行首）。默认 false：只有位于文本节点
-   * 开头（idx === 0）或前一个字符为空白（/\s/，含 NBSP）时才算命中，避免 `a@b.com`
-   * 这类邮箱 / 路径误触发列表；设为 true 时恢复旧行为（不检查边界）。
+   * 是否允许触发符紧跟在 ASCII 单词字符之后。默认 false：当触发符前一个字符匹配
+   * /\w/（ASCII 字母、数字、下划线）时不触发，避免 `a@b.com` 这类邮箱 / 网址误触发
+   * 列表；文本节点开头及空白、NBSP、中文等非 ASCII 字符、标点之后照常触发。
+   * 设为 true 时恢复旧行为（任何位置都触发，不做边界检查）。
    */
   allowMidWord?: boolean
 

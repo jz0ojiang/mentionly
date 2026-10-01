@@ -179,47 +179,41 @@ describe('MentionCore — trigger detection', () => {
 describe('MentionCore — trigger word boundary', () => {
   const items = [{ id: '1', label: 'Alice' }]
 
-  it('does not open for a mid-word trigger (a@b)', () => {
-    const core = makeCore({ triggers: [{ char: '@', items }] })
-    core.setElement(createEditorWithText('a@b'))
+  function openState(triggerChar: string, text: string, allowMidWord?: boolean) {
+    const core = makeCore({ triggers: [{ char: triggerChar, items, allowMidWord }] })
+    core.setElement(createEditorWithText(text))
     core.handlers.input()
-    expect(core.getState().isOpen).toBe(false)
-    expect(core.getState().activeTrigger).toBe(null)
+    return core.getState()
+  }
+
+  it.each([
+    ['a@b', '@'],
+    ['foo#tag', '#'],
+    ['x_@y', '@'],
+    ['9@x', '@'],
+  ])('does not open for %s (ASCII word char right before the trigger)', (text, char) => {
+    const state = openState(char, text)
+    expect(state.isOpen).toBe(false)
+    expect(state.activeTrigger).toBe(null)
   })
 
-  it('opens when the trigger follows whitespace (a @b)', () => {
-    const core = makeCore({ triggers: [{ char: '@', items }] })
-    core.setElement(createEditorWithText('a @b'))
-    core.handlers.input()
-    expect(core.getState().isOpen).toBe(true)
-    expect(core.getState().activeTrigger).toBe('@')
-    expect(core.getState().query).toBe('b')
-  })
-
-  it('opens when the trigger starts the line (@b)', () => {
-    const core = makeCore({ triggers: [{ char: '@', items }] })
-    core.setElement(createEditorWithText('@b'))
-    core.handlers.input()
-    expect(core.getState().isOpen).toBe(true)
-    expect(core.getState().activeTrigger).toBe('@')
-    expect(core.getState().query).toBe('b')
-  })
-
-  it('treats NBSP as a boundary (a\u00A0@b)', () => {
-    const core = makeCore({ triggers: [{ char: '@', items }] })
-    core.setElement(createEditorWithText('a\u00A0@b'))
-    core.handlers.input()
-    expect(core.getState().isOpen).toBe(true)
-    expect(core.getState().activeTrigger).toBe('@')
+  it.each([
+    ['@b', '@'],
+    ['a @b', '@'],
+    ['a\u00A0@b', '@'],
+    ['你好@张三', '@'],
+    ['(@alice', '@'],
+  ])('opens for %s (start / whitespace / NBSP / CJK / punctuation before the trigger)', (text, char) => {
+    const state = openState(char, text)
+    expect(state.isOpen).toBe(true)
+    expect(state.activeTrigger).toBe(char)
   })
 
   it('opens for a mid-word trigger when allowMidWord is true', () => {
-    const core = makeCore({ triggers: [{ char: '@', items, allowMidWord: true }] })
-    core.setElement(createEditorWithText('a@b'))
-    core.handlers.input()
-    expect(core.getState().isOpen).toBe(true)
-    expect(core.getState().activeTrigger).toBe('@')
-    expect(core.getState().query).toBe('b')
+    const state = openState('@', 'a@b', true)
+    expect(state.isOpen).toBe(true)
+    expect(state.activeTrigger).toBe('@')
+    expect(state.query).toBe('b')
   })
 })
 
