@@ -64,6 +64,11 @@ function mockExecCommand(editor: HTMLElement) {
   return () => { document.execCommand = original }
 }
 
+/** React 的「Maximum update depth exceeded」可能走 console.error，也可能直接抛出 */
+function maxUpdateDepthErrors(spy: { mock: { calls: unknown[][] } }): unknown[][] {
+  return spy.mock.calls.filter((call) => String(call[0]).includes('Maximum update depth'))
+}
+
 const alice = { id: '1', label: 'Alice' }
 const bob = { id: '2', label: 'Bob' }
 
@@ -218,10 +223,13 @@ describe('useMention (React adapter)', () => {
     }))
   })
 
-  it('warns once in development when triggers changes on every render', () => {
+  it('warns once and does not loop when triggers is a fresh array on every render', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let renders = 0
 
     function InlineTriggers() {
+      renders += 1
       const [, setTick] = useState(0)
       const api = useMention({ triggers: [{ char: '@', items: [alice] }] })
       return (
@@ -246,6 +254,48 @@ describe('useMention (React adapter)', () => {
     // 只警告一次
     fireEvent.click(bump)
     expect(warnSpy).toHaveBeenCalledTimes(1)
+
+    // 反复 setOptions + close() 不会陷入无限重渲染
+    expect(renders).toBeLessThan(20)
+    expect(maxUpdateDepthErrors(errorSpy)).toHaveLength(0)
+  })
+
+  it('closes the list instead of looping when inline triggers re-render it', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const apiRef: ApiRef = { current: null }
+
+    function InlineTriggers() {
+      const [, setTick] = useState(0)
+      const api = useMention({ triggers: [{ char: '@', items: [alice, bob] }] })
+      apiRef.current = api
+      return (
+        <>
+          <div ref={api.ref} contentEditable data-testid="editor" />
+          <button type="button" onClick={() => setTick((n) => n + 1)}>bump</button>
+        </>
+      )
+    }
+
+    const { getByRole } = render(<InlineTriggers />)
+    const editor = getEditor()
+
+    setEditorText(editor, '@')
+    fireEvent.input(editor)
+
+    // 已知限制：内联 triggers 下，列表打开引发的重渲染就会带上新引用，core 因此 close() 掉列表。
+    // 这是设计上的取舍（靠 dev 警告提醒用户用 useMemo/模块级常量），关键是它不会无限重渲染。
+    expect(apiRef.current!.state.isOpen).toBe(false)
+    expect(maxUpdateDepthErrors(errorSpy)).toHaveLength(0)
+
+    // 之后仍然可用：再触发一次会重新打开列表（直到下一次重渲染再被关闭）
+    setEditorText(editor, '@b')
+    fireEvent.input(editor)
+    expect(apiRef.current!.state.isOpen).toBe(false)
+    expect(maxUpdateDepthErrors(errorSpy)).toHaveLength(0)
+
+    // 每次「打开 → 重渲染 → setOptions 关列表」都会累加一次引用变化，连续 3 次后给出警告
+    expect(warnSpy.mock.calls.some((call) => String(call[0]).includes('triggers'))).toBe(true)
   })
 
   it('renders on the server (no DOM access on import / construction)', () => {
