@@ -360,4 +360,38 @@ describe('MentionInput', () => {
     a.unmount()
     b.unmount()
   })
+
+  it('lets core own the combobox ARIA on the editor', async () => {
+    const wrapper = mount(MentionInput, {
+      props: { triggers, teleport: false, placeholder: 'Type here' },
+      attachTo: document.body,
+    })
+    const editor = wrapper.find('.mentionly-editor')
+
+    // 挂载后 core 立即接管 role 与 aria-*，模板不再自己声明它们
+    expect(editor.attributes('role')).toBe('combobox')
+    expect(editor.attributes('aria-autocomplete')).toBe('list')
+    expect(editor.attributes('aria-expanded')).toBe('false')
+    expect(editor.attributes('aria-controls')).toBeTruthy()
+    expect(editor.attributes('aria-activedescendant')).toBeUndefined()
+    expect(editor.attributes('aria-multiline')).toBeUndefined()
+
+    // 与组件自身相关的属性保留
+    expect(editor.attributes('aria-placeholder')).toBe('Type here')
+
+    // aria-expanded 随列表开关变化
+    setEditorText(editor.element as HTMLElement, '@')
+    await editor.trigger('input')
+    await nextTick()
+
+    expect(editor.attributes('aria-expanded')).toBe('true')
+    expect(editor.attributes('aria-activedescendant')).toBeTruthy()
+
+    editor.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await nextTick()
+
+    expect(editor.attributes('aria-expanded')).toBe('false')
+    expect(editor.attributes('aria-activedescendant')).toBeUndefined()
+    wrapper.unmount()
+  })
 })
