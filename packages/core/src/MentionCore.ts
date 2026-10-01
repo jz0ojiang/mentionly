@@ -7,6 +7,7 @@ import type {
   MentionTrigger,
   MentionPageInfo,
   MentionItemsResult,
+  Part,
   ContentPart,
   DataPart,
   InsertMentionPayload,
@@ -15,15 +16,19 @@ import type {
 import {
   createMentionSpan,
   parseDOMToParts,
+  parseDOMToOutputParts,
   contentPartsToDataParts,
-  restoreContent,
+  restoreContentInput,
   setCursorToEnd,
   getTextBeforeCursor,
   getPlainTextFromParts,
 } from './utils'
+import { canUseExecCommand, deleteSelection, insertHTML, insertText } from './dom-commands'
 
 // 键盘导航接近末尾多少项时预取下一页
 const PREFETCH_THRESHOLD = 3
+let nextInstanceId = 0
+let warnedLegacyContent = false
 
 function createInitialState(): MentionState {
   return {
@@ -33,6 +38,7 @@ function createInitialState(): MentionState {
     query: '',
     activeTrigger: null,
     loading: false,
+    error: null,
     loadingMore: false,
     hasMore: false,
     popupPosition: { top: 0, left: 0 },
@@ -72,9 +78,17 @@ export class MentionCore {
   private autoBindHandlers = false
   private handlersBound = false
   private listenersAttached = false
+  private managedA11yAttributes = new Map<string, string | null>()
+
+  readonly ids: { listbox: string; option(index: number): string }
 
   // ⚠ 构造函数内禁止访问 window/document（SSR 安全）
   constructor(options: MentionCoreOptions) {
+    const prefix = `mentionly-${++nextInstanceId}`
+    this.ids = {
+      listbox: `${prefix}-listbox`,
+      option: (index: number) => `${prefix}-option-${index}`,
+    }
     // 存普通快照，后续靠 setOptions 更新；不持有外部响应式对象引用
     this.options = { ...options }
   }
@@ -106,6 +120,7 @@ export class MentionCore {
   private flush(): void {
     if (!this.dirty) return
     this.dirty = false
+    this.syncElementA11y()
     const s = this.state
     for (const fn of this.subscribers) fn(s)
   }
@@ -129,7 +144,9 @@ export class MentionCore {
   setElement = (el: HTMLElement | null): void => {
     if (el === this.element) return
     if (this.handlersBound && this.element) this.unbindElementHandlers(this.element)
+    if (this.element) this.clearElementA11y(this.element)
     this.element = el
+    if (el) this.syncElementA11y()
     if (this.autoBindHandlers && this.started && el) this.bindElementHandlers(el)
     // 新元素可能自带内容，重算 isEmpty
     this.bumpVersion()
@@ -157,6 +174,7 @@ export class MentionCore {
   /** 解绑 viewport + 清所有 timer/RAF（+ 解绑元素 handlers）。取代 onBeforeUnmount。 */
   stop = (): void => {
     this.started = false
+    this.asyncVersion++
     if (this.handlersBound && this.element) this.unbindElementHandlers(this.element)
     this.teardownViewportListeners()
     if (this.rafId !== null) { window.cancelAnimationFrame(this.rafId); this.rafId = null }
@@ -168,6 +186,39 @@ export class MentionCore {
   setOptions = (partial: Partial<MentionCoreOptions>): void => {
     this.options = { ...this.options, ...partial }
     this.syncViewportListeners()
+  }
+
+  private syncElementA11y(): void {
+    const el = this.element
+    if (!el) return
+
+    const desired = new Map<string, string | null>([
+      ['aria-autocomplete', 'list'],
+      ['aria-expanded', String(this.state.isOpen)],
+      ['aria-controls', this.ids.listbox],
+      ['aria-activedescendant', this.state.isOpen && this.state.filteredItems.length > 0
+        ? this.ids.option(this.state.activeIndex)
+        : null],
+    ])
+    if (!el.hasAttribute('role') || this.managedA11yAttributes.has('role')) {
+      desired.set('role', 'combobox')
+    }
+
+    for (const [name, value] of desired) {
+      if (!this.managedA11yAttributes.has(name)) {
+        this.managedA11yAttributes.set(name, el.getAttribute(name))
+      }
+      if (value === null) el.removeAttribute(name)
+      else el.setAttribute(name, value)
+    }
+  }
+
+  private clearElementA11y(el: HTMLElement): void {
+    for (const [name, previous] of this.managedA11yAttributes) {
+      if (previous === null) el.removeAttribute(name)
+      else el.setAttribute(name, previous)
+    }
+    this.managedA11yAttributes.clear()
   }
 
   private bindElementHandlers(el: HTMLElement): void {
@@ -264,6 +315,7 @@ export class MentionCore {
       this.setState({
         filteredItems: items.filter((item) => item.label.toLowerCase().includes(lowerQ)),
         loading: false,
+        error: null,
       })
       return
     }
@@ -329,16 +381,17 @@ export class MentionCore {
           hasMore: pageSize != null && more,
           loading: false,
           loadingMore: false,
+          error: null,
         })
       })
-    } catch {
+    } catch (error) {
       if (version !== this.asyncVersion) return
       this.batch(() => {
         // 首屏失败清空；追加失败保留已加载项与 hasMore 以便重试，且不推进 offset
         if (mode === 'replace') {
           this.setState({ filteredItems: [], hasMore: false })
         }
-        this.setState({ loading: false, loadingMore: false })
+        this.setState({ loading: false, loadingMore: false, error })
       })
     }
   }
@@ -359,7 +412,7 @@ export class MentionCore {
       if (trigger.mode === 'command') {
         // 选区没建成时不能删字符；命令本身仍要执行
         if (this.selectTriggerText(trigger.char)) {
-          document.execCommand('delete')
+          deleteSelection()
         }
         trigger.onSelect?.(item)
         this.close()
@@ -370,9 +423,10 @@ export class MentionCore {
       // 选中触发文本，用 execCommand('insertHTML') 替换为 mention span
       // 这样整个操作进入浏览器 undo 栈，Ctrl+Z 可撤销
       if (!this.selectTriggerText(trigger.char)) return
-      const span = createMentionSpan(trigger.char, item)
+      const data = trigger.toData?.(item)
+      const span = createMentionSpan(trigger.char, item, undefined, data)
       const suffix = this.options.insertSpaceAfter !== false ? '\u00A0' : ''
-      document.execCommand('insertHTML', false, span.outerHTML + suffix)
+      insertHTML(span.outerHTML + suffix)
 
       this.close()
       this.bumpVersion()
@@ -385,11 +439,12 @@ export class MentionCore {
       const editor = this.element
       if (!editor) return false
 
-      const trigger = payload.triggeredBy ?? ''
+      const trigger = payload.trigger ?? payload.triggeredBy ?? ''
       const mentionId = payload.id
       const dataPart = typeof payload.dataPart === 'function'
         ? payload.dataPart({ id: mentionId, label: payload.label, triggeredBy: trigger })
         : payload.dataPart
+      const data = 'data' in payload ? payload.data : undefined
 
       if (insertOptions.focus !== false) {
         editor.focus()
@@ -402,11 +457,11 @@ export class MentionCore {
         setCursorToEnd(editor)
       }
 
-      const span = createMentionSpan(trigger, { id: mentionId, label: payload.label }, dataPart)
+      const span = createMentionSpan(trigger, { id: mentionId, label: payload.label }, dataPart, data)
       const shouldAppendSpace = insertOptions.appendSpace ?? true
       const suffix = shouldAppendSpace ? '\u00A0' : ''
-      if (typeof document.execCommand === 'function') {
-        document.execCommand('insertHTML', false, span.outerHTML + suffix)
+      if (canUseExecCommand()) {
+        insertHTML(span.outerHTML + suffix)
       } else {
         const sel = window.getSelection()
         if (!sel || sel.rangeCount === 0) {
@@ -518,6 +573,7 @@ export class MentionCore {
         filteredItems: [],
         activeIndex: 0,
         loading: false,
+        error: null,
         loadingMore: false,
         hasMore: false,
       })
@@ -623,7 +679,7 @@ export class MentionCore {
     const text = e.clipboardData?.getData('text/plain') ?? ''
     if (!text) return
     this.isPasting = true
-    document.execCommand('insertText', false, text)
+    insertText(text)
     this.isPasting = false
   }
 
@@ -650,14 +706,17 @@ export class MentionCore {
   //  内容序列化 / 编辑器操作
   // ════════════════════════════════════════
 
-  getParts = (): ContentPart[] => {
+  getParts = (): Part[] => {
     const editor = this.element
     if (!editor) return []
-    return parseDOMToParts(editor)
+    return parseDOMToOutputParts(editor)
   }
 
+  /** @deprecated 将在 3.0 移除，请改用 `getParts()`。 */
   getDataParts = (): DataPart[] => {
-    return contentPartsToDataParts(this.getParts(), this.getTriggers())
+    const editor = this.element
+    if (!editor) return []
+    return contentPartsToDataParts(parseDOMToParts(editor), this.getTriggers())
   }
 
   getPlainText = (): string => {
@@ -674,10 +733,16 @@ export class MentionCore {
     })
   }
 
-  setContent = (parts: ContentPart[]): void => {
+  setContent = (parts: Part[] | ContentPart[]): void => {
     const editor = this.element
     if (!editor) return
-    restoreContent(editor, parts)
+
+    const isLegacy = parts.some((part) => 'content' in part || 'triggeredBy' in part)
+    if (isLegacy && !warnedLegacyContent) {
+      warnedLegacyContent = true
+      console.warn('[mentionly] setContent(ContentPart[]) is deprecated; use Part[] instead.')
+    }
+    restoreContentInput(editor, parts)
     this.bumpVersion()
   }
 

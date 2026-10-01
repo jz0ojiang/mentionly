@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { MentionCore } from '../src/MentionCore'
-import type { MentionItem, MentionState, ContentPart } from '../src/types'
+import type { MentionItem, MentionState, ContentPart, Part } from '../src/types'
 
 // ── 测试夹具 ──────────────────────────────────────────────
 // 这些用例完全脱离 Vue：直接 new MentionCore，驱动 handlers/方法，
@@ -44,6 +44,15 @@ function createEmptyEditor() {
   return editor
 }
 
+function createMentionForTest(trigger: string, id: string, label: string) {
+  const span = document.createElement('span')
+  span.contentEditable = 'false'
+  span.dataset.mentionId = id
+  span.dataset.mentionTrigger = trigger
+  span.textContent = `${trigger}${label}`
+  return span
+}
+
 // 刷新若干层微任务，等待 resolveItems 的 await 链结算（无定时器时足够）
 async function flush() {
   await Promise.resolve()
@@ -68,6 +77,7 @@ describe('MentionCore — state & subscription contract', () => {
     expect(s.isOpen).toBe(false)
     expect(s.filteredItems).toEqual([])
     expect(s.activeTrigger).toBe(null)
+    expect(s.error).toBe(null)
     expect(s.isEmpty).toBe(true)
   })
 
@@ -318,16 +328,88 @@ describe('MentionCore — selection & serialization', () => {
     expect(core.getParts()).toEqual([
       {
         type: 'mention',
-        triggeredBy: '',
+        trigger: '',
         id: 'ext-1',
         label: 'External Item',
-        dataPart: { dataType: 'external_ref', refId: 'ext-1', displayName: 'External Item', trigger: '' },
       },
-      { type: 'text', content: '\u00A0' },
     ])
     expect(core.getDataParts()).toEqual([
       { type: 'data', dataType: 'external_ref', refId: 'ext-1', displayName: 'External Item', trigger: '' },
     ])
+  })
+
+  it('select() calls toData with the complete item and persists its result', () => {
+    const item = { id: '1', label: 'Alice', uri: 'user:alice', kind: 'person' }
+    const toData = vi.fn((selected: MentionItem) => ({ uri: selected.uri, kind: selected.kind }))
+    const core = makeCore({ triggers: [{ char: '@', items: [item], toData }] })
+    const editor = createEditorWithText('@al')
+    core.setElement(editor)
+
+    const original = document.execCommand
+    document.execCommand = vi.fn((_command: string, _ui?: boolean, value?: string) => {
+      editor.innerHTML = value ?? ''
+      return true
+    })
+
+    try {
+      core.handlers.input()
+      core.select(core.getState().filteredItems[0]!)
+
+      expect(toData).toHaveBeenCalledOnce()
+      expect(toData).toHaveBeenCalledWith(item)
+      expect(core.getParts()).toEqual([
+        { type: 'mention', trigger: '@', id: '1', label: 'Alice', data: { uri: 'user:alice', kind: 'person' } },
+      ])
+    } finally {
+      document.execCommand = original
+    }
+  })
+
+  it('insertMention() stores the 2.0 trigger and data payload', () => {
+    const core = makeCore({ triggers: [] })
+    const editor = createEmptyEditor()
+    core.setElement(editor)
+
+    core.insertMention({
+      id: 'doc-1',
+      label: 'Guide',
+      trigger: '#',
+      data: { uri: 'doc:guide', nested: { rank: 1 } },
+    }, { appendSpace: false })
+
+    expect(core.getParts()).toEqual([
+      { type: 'mention', trigger: '#', id: 'doc-1', label: 'Guide', data: { uri: 'doc:guide', nested: { rank: 1 } } },
+    ])
+  })
+
+  it('getParts normalizes NBSP, merges text, trims edges, and drops empty text', () => {
+    const core = makeCore({ triggers: [] })
+    const editor = createEmptyEditor()
+    editor.append('  hello\u00A0')
+    editor.append(document.createTextNode('world  '))
+    core.setElement(editor)
+
+    expect(core.getParts()).toEqual([{ type: 'text', text: 'hello world' }])
+  })
+
+  it('legacy setContent input warns only once and is parsed into 2.0 parts', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const core = makeCore({ triggers: [] })
+    core.setElement(createEmptyEditor())
+    const legacy: ContentPart[] = [
+      { type: 'text', content: 'hello ' },
+      { type: 'mention', triggeredBy: '@', id: '1', label: 'Alice' },
+    ]
+
+    core.setContent(legacy)
+    core.setContent(legacy)
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(core.getParts()).toEqual([
+      { type: 'text', text: 'hello ' },
+      { type: 'mention', trigger: '@', id: '1', label: 'Alice' },
+    ])
+    warn.mockRestore()
   })
 
   it('insertMention() can omit the trailing space', () => {
@@ -348,17 +430,39 @@ describe('MentionCore — selection & serialization', () => {
     core.setElement(editor)
     expect(core.getState().isEmpty).toBe(true)
 
-    const content: ContentPart[] = [
-      { type: 'text', content: 'hello ' },
-      { type: 'mention', triggeredBy: '@', id: '1', label: 'Alice' },
+    const content: Part[] = [
+      { type: 'text', text: 'hello ' },
+      { type: 'mention', trigger: '@', id: '1', label: 'Alice', data: { uri: 'user:1' } },
     ]
     core.setContent(content)
 
     expect(core.getState().isEmpty).toBe(false)
     expect(core.getPlainText()).toBe('hello @Alice')
-    const parts = core.getParts()
-    expect(parts[0]).toEqual({ type: 'text', content: 'hello ' })
-    expect(parts[1]).toMatchObject({ type: 'mention', id: '1', label: 'Alice', triggeredBy: '@' })
+    expect(core.getParts()).toEqual(content)
+
+    core.setContent(core.getParts())
+    expect(core.getParts()).toEqual(content)
+  })
+
+  it('getDataParts preserves 1.x type overrides and NBSP bytes', () => {
+    const core = makeCore({
+      triggers: [{
+        char: '@',
+        items: [],
+        dataPart: () => ({ type: 'mentioned_ref', uri: 'user:alice' }),
+      }],
+    })
+    const editor = createEmptyEditor()
+    editor.append(document.createTextNode('  before\u00A0'))
+    editor.appendChild(createMentionForTest('@', '1', 'Alice'))
+    editor.append(document.createTextNode('\u00A0after  '))
+    core.setElement(editor)
+
+    expect(core.getDataParts()).toEqual([
+      { type: 'text', text: 'before\u00A0' },
+      { type: 'mentioned_ref', uri: 'user:alice' },
+      { type: 'text', text: '\u00A0after' },
+    ])
   })
 
   it('clear() empties the editor and closes', () => {
@@ -424,6 +528,56 @@ describe('MentionCore — async pagination & races', () => {
 
     expect(core.getState().filteredItems.length).toBe(3)
     expect(core.getState().hasMore).toBe(false)
+  })
+
+  it('stores a rejected data source error and clears it after a successful load', async () => {
+    const failure = new Error('network down')
+    const items = vi.fn()
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce([{ id: '1', label: 'Alice' }])
+    const core = makeCore({ triggers: [{ char: '@', items }] })
+    const editor = createEditorWithText('@')
+    core.setElement(editor)
+
+    core.handlers.input()
+    await flush()
+    expect(core.getState().error).toBe(failure)
+    expect(core.getState().loading).toBe(false)
+
+    core.handlers.input()
+    await flush()
+    expect(core.getState().error).toBe(null)
+    expect(core.getState().filteredItems).toEqual([{ id: '1', label: 'Alice' }])
+  })
+
+  it('close() clears a data source error', async () => {
+    const core = makeCore({ triggers: [{ char: '@', items: vi.fn().mockRejectedValue(new Error('failed')) }] })
+    core.setElement(createEditorWithText('@'))
+    core.handlers.input()
+    await flush()
+    expect(core.getState().error).toBeInstanceOf(Error)
+
+    core.close()
+    expect(core.getState().error).toBe(null)
+  })
+
+  it('stop() discards an in-flight response without notifying subscribers', async () => {
+    let resolveItems: (items: MentionItem[]) => void = () => {}
+    const items = vi.fn(() => new Promise<MentionItem[]>((resolve) => { resolveItems = resolve }))
+    const core = makeCore({ triggers: [{ char: '@', items }] })
+    core.setElement(createEditorWithText('@'))
+    core.handlers.input()
+    const stateAtStop = core.getState()
+    const subscriber = vi.fn()
+    core.subscribe(subscriber)
+
+    core.stop()
+    resolveItems([{ id: 'late', label: 'Late result' }])
+    await flush()
+
+    expect(core.getState()).toBe(stateAtStop)
+    expect(core.getState().filteredItems).toEqual([])
+    expect(subscriber).not.toHaveBeenCalled()
   })
 
   it('close() discards an in-flight loadMore response', async () => {
@@ -609,6 +763,67 @@ describe('MentionCore — vanilla bindHandlers path', () => {
   })
 })
 
+// ── accessibility ─────────────────────────────────────────
+describe('MentionCore — accessibility', () => {
+  it('generates unique ids without requiring a DOM element', () => {
+    const first = makeCore({ triggers: [] })
+    const second = makeCore({ triggers: [] })
+
+    expect(first.ids.listbox).not.toBe(second.ids.listbox)
+    expect(first.ids.option(2)).not.toBe(second.ids.option(2))
+    expect(first.ids.option(2)).toContain('option-2')
+  })
+
+  it('syncs combobox attributes with popup state and active item', () => {
+    const core = makeCore({
+      triggers: [{ char: '@', items: [{ id: '1', label: 'Alice' }, { id: '2', label: 'Bob' }] }],
+    })
+    const editor = createEditorWithText('@')
+    core.setElement(editor)
+
+    expect(editor.getAttribute('role')).toBe('combobox')
+    expect(editor.getAttribute('aria-autocomplete')).toBe('list')
+    expect(editor.getAttribute('aria-expanded')).toBe('false')
+    expect(editor.getAttribute('aria-controls')).toBe(core.ids.listbox)
+    expect(editor.hasAttribute('aria-activedescendant')).toBe(false)
+
+    core.handlers.input()
+    expect(editor.getAttribute('aria-expanded')).toBe('true')
+    expect(editor.getAttribute('aria-activedescendant')).toBe(core.ids.option(0))
+
+    core.handlers.keydown(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(editor.getAttribute('aria-activedescendant')).toBe(core.ids.option(1))
+
+    core.close()
+    expect(editor.getAttribute('aria-expanded')).toBe('false')
+    expect(editor.hasAttribute('aria-activedescendant')).toBe(false)
+  })
+
+  it('preserves an existing role and restores managed attributes when changing elements', () => {
+    const core = makeCore({ triggers: [] })
+    const first = createEmptyEditor()
+    first.setAttribute('role', 'textbox')
+    first.setAttribute('aria-expanded', 'mixed')
+    const second = createEmptyEditor()
+
+    core.setElement(first)
+    expect(first.getAttribute('role')).toBe('textbox')
+    expect(first.getAttribute('aria-expanded')).toBe('false')
+
+    core.setElement(second)
+    expect(first.getAttribute('role')).toBe('textbox')
+    expect(first.getAttribute('aria-expanded')).toBe('mixed')
+    expect(first.hasAttribute('aria-controls')).toBe(false)
+    expect(second.getAttribute('role')).toBe('combobox')
+
+    core.setElement(null)
+    expect(second.hasAttribute('role')).toBe(false)
+    expect(second.hasAttribute('aria-autocomplete')).toBe(false)
+    expect(second.hasAttribute('aria-expanded')).toBe(false)
+    expect(second.hasAttribute('aria-controls')).toBe(false)
+  })
+})
+
 // ── viewport 监听 ─────────────────────────────────────────
 describe('MentionCore — viewport listeners', () => {
   it('closes on window scroll when popupScrollBehavior is "close"', () => {
@@ -623,6 +838,35 @@ describe('MentionCore — viewport listeners', () => {
 
     window.dispatchEvent(new Event('scroll'))
     expect(core.getState().isOpen).toBe(false)
+  })
+
+  it('setOptions applies trigger and insertion options immediately', () => {
+    const original = document.execCommand
+    const execCommand = vi.fn().mockReturnValue(true)
+    document.execCommand = execCommand
+    const core = makeCore({
+      triggers: [{ char: '@', items: [{ id: '1', label: 'Alice' }] }],
+      insertSpaceAfter: true,
+    })
+    core.setElement(createEditorWithText('#'))
+
+    try {
+      core.setOptions({
+        triggers: [{ char: '#', items: [{ id: '2', label: 'Issue' }] }],
+        insertSpaceAfter: false,
+      })
+      core.handlers.input()
+      core.select(core.getState().filteredItems[0]!)
+
+      expect(core.getState().activeTrigger).toBe(null)
+      expect(execCommand).toHaveBeenCalledWith(
+        'insertHTML',
+        false,
+        expect.not.stringContaining('\u00A0'),
+      )
+    } finally {
+      document.execCommand = original
+    }
   })
 
   it('setOptions dynamically switches scroll behavior (detach / reattach listeners)', () => {

@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { createMentionSpan, parseDOMToParts, contentPartsToDataParts, restoreContent } from '../src/utils'
-import type { ContentPart, MentionTrigger } from '../src/types'
+import {
+  createMentionSpan,
+  parseDOMToParts,
+  parseDOMToOutputParts,
+  contentPartsToDataParts,
+  restoreContent,
+  restoreParts,
+} from '../src/utils'
+import type { ContentPart, MentionTrigger, Part } from '../src/types'
 
 describe('utils', () => {
   it('parses DOM to parts with mentions and newlines', () => {
@@ -19,6 +26,18 @@ describe('utils', () => {
       { type: 'text', content: ' there' },
       { type: 'text', content: '\n' },
       { type: 'text', content: 'Next' },
+    ])
+  })
+
+  it('parses 2.0 parts with persisted mention data and normalized text', () => {
+    const editor = document.createElement('div')
+    editor.append(document.createTextNode('  Hello\u00A0'))
+    editor.appendChild(createMentionSpan('@', { id: '1', label: 'Alice' }, undefined, { uri: 'user:1' }))
+    editor.append(document.createTextNode('  '))
+
+    expect(parseDOMToOutputParts(editor)).toEqual([
+      { type: 'text', text: 'Hello ' },
+      { type: 'mention', trigger: '@', id: '1', label: 'Alice', data: { uri: 'user:1' } },
     ])
   })
 
@@ -93,6 +112,17 @@ describe('utils', () => {
     expect(mention).toBeTruthy()
     expect(mention.textContent).toBe('@Alice')
     expect(editor.innerHTML).toContain('<br')
+  })
+
+  it('restores and parses 2.0 parts from DOM dataset', () => {
+    const editor = document.createElement('div')
+    const parts: Part[] = [
+      { type: 'text', text: 'Hello ' },
+      { type: 'mention', trigger: '#', id: 'ctx-1', label: 'Context', data: { uri: 'ctx:1' } },
+    ]
+
+    restoreParts(editor, parts)
+    expect(parseDOMToOutputParts(editor)).toEqual(parts)
   })
 
   it('restores and parses custom mention dataPart from DOM dataset', () => {

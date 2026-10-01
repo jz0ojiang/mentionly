@@ -74,8 +74,12 @@ export interface MentionTrigger {
   /** 异步数据源的防抖时间（ms），默认 0（无防抖） */
   debounce?: number
 
+  /** 选中时从完整数据项提取并持久化到 mention 的自定义数据 */
+  toData?: (item: MentionItem) => unknown
+
   /**
    * 自定义此触发器产生的 DataPart 结构（方式一：transformer 函数）
+   * @deprecated 将在 3.0 移除，请改用 `toData` 与 `getParts()`。
    * @example
    * dataPart: (item) => ({ type: 'mentioned_ref', projectId: item.id, name: item.label })
    */
@@ -84,6 +88,7 @@ export interface MentionTrigger {
   /**
    * 声明式 schema 映射（方式二：简单场景的语法糖）
    * 如果同时提供了 dataPart 函数，dataPart 函数优先
+   * @deprecated 将在 3.0 移除，请改用 `toData` 与 `getParts()`。
    * @example
    * schema: { type: 'mentioned_ref', mapping: { projectId: 'id', name: 'label' } }
    */
@@ -100,7 +105,25 @@ export interface MentionTrigger {
 //  内容模型
 // ════════════════════════════════════════
 
-/** 内部中间表示：编辑器内容的结构化片段 */
+export interface TextPart {
+  type: 'text'
+  text: string
+}
+
+export interface MentionPart<T = unknown> {
+  type: 'mention'
+  trigger: string
+  id: string
+  label: string
+  data?: T
+}
+
+export type Part<T = unknown> = TextPart | MentionPart<T>
+
+/**
+ * 1.x 编辑器内容的结构化片段。
+ * @deprecated 将在 3.0 移除，请改用 {@link Part}。
+ */
 export type ContentPart =
   | { type: 'text'; content: string }
   | {
@@ -112,10 +135,16 @@ export type ContentPart =
   }
 
 /** 编程式插入 mention 的参数 */
-export interface InsertMentionPayload {
+export interface InsertMentionPayload<T = unknown> {
   id: string
   label: string
+  trigger?: string
+  data?: T
+
+  /** @deprecated 将在 3.0 移除，请改用 `trigger`。 */
   triggeredBy?: string
+
+  /** @deprecated 将在 3.0 移除，请改用 `data`。 */
   dataPart?:
     | Record<string, any>
     | ((item: MentionItem & { triggeredBy: string }) => Record<string, any>)
@@ -127,10 +156,13 @@ export interface InsertMentionOptions {
   focus?: boolean
 }
 
-/** 输出给后端的 DataPart（最终序列化结果） */
+/**
+ * 1.x 输出给后端的最终序列化结果。
+ * @deprecated 将在 3.0 移除，请改用 {@link Part}。
+ */
 export type DataPart =
   | { type: 'text'; text: string }
-  | ({ type: 'data' } & Record<string, any>)
+  | ({ type: string } & Record<string, any>)
 
 // ════════════════════════════════════════
 //  配置与状态
@@ -187,6 +219,7 @@ export interface MentionState {
   query: string
   activeTrigger: string | null
   loading: boolean
+  error: unknown | null
   loadingMore: boolean
   hasMore: boolean
   popupPosition: PopupPosition
