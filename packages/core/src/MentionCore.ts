@@ -28,13 +28,16 @@ import { canUseExecCommand, deleteSelection, insertHTML, insertText } from './do
 
 // 键盘导航接近末尾多少项时预取下一页
 const PREFETCH_THRESHOLD = 3
+// 列表为空时共用同一个数组：setState 用 Object.is 判断变化，每次新建 [] 会让已关闭的列表
+// 再次 close() 时也生成新快照并通知订阅方，破坏「无变化时 getState 返回同一引用」的约定
+const EMPTY_ITEMS: MentionItem[] = []
 let nextInstanceId = 0
 let warnedLegacyContent = false
 
 function createInitialState(): MentionState {
   return {
     isOpen: false,
-    filteredItems: [],
+    filteredItems: EMPTY_ITEMS,
     activeIndex: 0,
     query: '',
     activeTrigger: null,
@@ -394,7 +397,7 @@ export class MentionCore {
       this.batch(() => {
         // 首屏失败清空；追加失败保留已加载项与 hasMore 以便重试，且不推进 offset
         if (mode === 'replace') {
-          this.setState({ filteredItems: [], hasMore: false })
+          this.setState({ filteredItems: EMPTY_ITEMS, hasMore: false })
         }
         this.setState({ loading: false, loadingMore: false, error })
       })
@@ -575,7 +578,7 @@ export class MentionCore {
         isOpen: false,
         activeTrigger: null,
         query: '',
-        filteredItems: [],
+        filteredItems: EMPTY_ITEMS,
         activeIndex: 0,
         loading: false,
         error: null,

@@ -954,3 +954,17 @@ describe('MentionCore — viewport listeners', () => {
     expect(core.getState().isOpen).toBe(false)
   })
 })
+
+describe('MentionCore — redundant close keeps the snapshot stable', () => {
+  it('does not notify or replace the state when close() is called on a closed list', () => {
+    const core = makeCore({ triggers: [{ char: '@', items: [{ id: '1', label: 'alice' }] }] })
+    const before = core.getState()
+    const listener = vi.fn()
+    const unsubscribe = core.subscribe(listener)
+    core.close()
+    core.close()
+    expect(listener).not.toHaveBeenCalled()
+    expect(core.getState()).toBe(before)
+    unsubscribe()
+  })
+})
