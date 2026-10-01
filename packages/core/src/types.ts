@@ -211,6 +211,12 @@ export interface MentionCoreOptions {
  */
 export interface UseMentionOptions extends MentionCoreOptions {}
 
+/** core 为各框架 adapter 提供的无障碍元素 id。 */
+export interface MentionCoreIds {
+  listbox: string
+  option(index: number): string
+}
+
 /** core 对外暴露的纯快照状态（供任意框架 adapter 镜像） */
 export interface MentionState {
   isOpen: boolean

@@ -1,5 +1,6 @@
 import type {
   MentionCoreOptions,
+  MentionCoreIds,
   MentionState,
   MentionHandlers,
   AttachOptions,
@@ -80,7 +81,7 @@ export class MentionCore {
   private listenersAttached = false
   private managedA11yAttributes = new Map<string, string | null>()
 
-  readonly ids: { listbox: string; option(index: number): string }
+  readonly ids: MentionCoreIds
 
   // ⚠ 构造函数内禁止访问 window/document（SSR 安全）
   constructor(options: MentionCoreOptions) {
@@ -184,7 +185,11 @@ export class MentionCore {
 
   /** Vue reactive props 变化时调；必须覆盖全部字段（含 insertSpaceAfter，select 会用到）。 */
   setOptions = (partial: Partial<MentionCoreOptions>): void => {
+    const triggersChanged = partial.triggers !== undefined && partial.triggers !== this.options.triggers
     this.options = { ...this.options, ...partial }
+    if (triggersChanged) {
+      this.close()
+    }
     this.syncViewportListeners()
   }
 

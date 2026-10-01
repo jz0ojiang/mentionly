@@ -561,6 +561,49 @@ describe('MentionCore — async pagination & races', () => {
     expect(core.getState().error).toBe(null)
   })
 
+  it('setOptions discards an old trigger request that resolves', async () => {
+    let resolveItems: (items: MentionItem[]) => void = () => {}
+    const oldItems = vi.fn(() => new Promise<MentionItem[]>((resolve) => { resolveItems = resolve }))
+    const core = makeCore({ triggers: [{ char: '@', items: oldItems }] })
+    core.setElement(createEditorWithText('@'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+    const subscriber = vi.fn()
+    core.subscribe(subscriber)
+
+    core.setOptions({ triggers: [{ char: '#', items: [] }] })
+    const callsAfterClose = subscriber.mock.calls.length
+    expect(core.getState().isOpen).toBe(false)
+    expect(core.getState().loading).toBe(false)
+
+    resolveItems([{ id: 'late', label: 'Late result' }])
+    await flush()
+
+    expect(core.getState().filteredItems).toEqual([])
+    expect(core.getState().error).toBe(null)
+    expect(subscriber).toHaveBeenCalledTimes(callsAfterClose)
+  })
+
+  it('setOptions discards an old trigger request that rejects', async () => {
+    let rejectItems: (error: unknown) => void = () => {}
+    const oldItems = vi.fn(() => new Promise<MentionItem[]>((_resolve, reject) => { rejectItems = reject }))
+    const core = makeCore({ triggers: [{ char: '@', items: oldItems }] })
+    core.setElement(createEditorWithText('@'))
+    core.handlers.input()
+    const subscriber = vi.fn()
+    core.subscribe(subscriber)
+
+    core.setOptions({ triggers: [{ char: '#', items: [] }] })
+    const callsAfterClose = subscriber.mock.calls.length
+    const failure = new Error('late rejection')
+    rejectItems(failure)
+    await flush()
+
+    expect(core.getState().isOpen).toBe(false)
+    expect(core.getState().error).toBe(null)
+    expect(subscriber).toHaveBeenCalledTimes(callsAfterClose)
+  })
+
   it('stop() discards an in-flight response without notifying subscribers', async () => {
     let resolveItems: (items: MentionItem[]) => void = () => {}
     const items = vi.fn(() => new Promise<MentionItem[]>((resolve) => { resolveItems = resolve }))
@@ -867,6 +910,27 @@ describe('MentionCore — viewport listeners', () => {
     } finally {
       document.execCommand = original
     }
+  })
+
+  it('setOptions keeps an open list for non-trigger option changes', () => {
+    const core = makeCore({
+      triggers: [{ char: '@', items: [{ id: '1', label: 'Alice' }] }],
+      insertSpaceAfter: true,
+      popupMode: 'fixed',
+      popupScrollBehavior: 'reposition',
+    })
+    core.setElement(createEditorWithText('@'))
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+
+    core.setOptions({
+      insertSpaceAfter: false,
+      popupMode: 'cursor',
+      popupScrollBehavior: 'ignore',
+    })
+
+    expect(core.getState().isOpen).toBe(true)
+    expect(core.getState().filteredItems).toEqual([{ id: '1', label: 'Alice' }])
   })
 
   it('setOptions dynamically switches scroll behavior (detach / reattach listeners)', () => {

@@ -29,6 +29,7 @@ export type {
   InsertMentionOptions,
   MentionCoreOptions,
   UseMentionOptions,
+  MentionCoreIds,
   MentionState,
   MentionHandlers,
   AttachOptions,
