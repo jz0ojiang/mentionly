@@ -13,7 +13,10 @@
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
+    "types": ["vite/client"],
     "paths": {
+      "@playground/shared": ["../../playground/shared/index.ts"],
+      "@playground/shared/*": ["../../playground/shared/*"],
       "@mentionly/svelte": ["../../packages/svelte/src/index.ts"],
       "@mentionly/core": ["../../packages/core/src/index.ts"]
     }

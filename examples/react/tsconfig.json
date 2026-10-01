@@ -16,6 +16,8 @@
     "noUnusedParameters": true,
     "types": ["vite/client"],
     "paths": {
+      "@playground/shared": ["../../playground/shared/index.ts"],
+      "@playground/shared/*": ["../../playground/shared/*"],
       "@mentionly/react": ["../../packages/react/src/index.ts"],
       "@mentionly/core": ["../../packages/core/src/index.ts"]
     }
