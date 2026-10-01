@@ -356,8 +356,10 @@ export class MentionCore {
       if (!trigger) return
 
       if (trigger.mode === 'command') {
-        this.selectTriggerText(trigger.char)
-        document.execCommand('delete')
+        // 选区没建成时不能删字符；命令本身仍要执行
+        if (this.selectTriggerText(trigger.char)) {
+          document.execCommand('delete')
+        }
         trigger.onSelect?.(item)
         this.close()
         this.bumpVersion()

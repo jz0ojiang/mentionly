@@ -247,6 +247,63 @@ describe('MentionCore — selection & serialization', () => {
     }
   })
 
+  it('command mode still deletes the trigger text on a successful selection', () => {
+    const onSelect = vi.fn()
+    const core = makeCore({
+      triggers: [{ char: '/', mode: 'command', items: [{ id: '1', label: 'clear' }], onSelect }],
+    })
+    const editor = createEditorWithText('/cl')
+    core.setElement(editor)
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+
+    const execCommand = vi.fn().mockReturnValue(true)
+    const original = document.execCommand
+    document.execCommand = execCommand
+
+    try {
+      core.select(core.getState().filteredItems[0]!)
+      expect(execCommand).toHaveBeenCalledWith('delete')
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(core.getState().isOpen).toBe(false)
+    } finally {
+      document.execCommand = original
+    }
+  })
+
+  it('command mode skips delete when the trigger selection cannot be built, but still fires onSelect', () => {
+    const onSelect = vi.fn()
+    const core = makeCore({
+      triggers: [{ char: '/', mode: 'command', items: [{ id: '1', label: 'clear' }], onSelect }],
+    })
+    const editor = createEditorWithText('/cl')
+    core.setElement(editor)
+    core.handlers.input()
+    expect(core.getState().isOpen).toBe(true)
+
+    // 把光标移回文本开头：前缀文本里没有触发符，selectTriggerText 会失败
+    const node = editor.firstChild as Text
+    const range = document.createRange()
+    range.setStart(node, 0)
+    range.setEnd(node, 0)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+
+    const execCommand = vi.fn().mockReturnValue(true)
+    const original = document.execCommand
+    document.execCommand = execCommand
+
+    try {
+      core.select(core.getState().filteredItems[0]!)
+      expect(execCommand).not.toHaveBeenCalled()
+      expect(onSelect).toHaveBeenCalledTimes(1)
+      expect(core.getState().isOpen).toBe(false)
+    } finally {
+      document.execCommand = original
+    }
+  })
+
   it('insertMention() appends a mention with a custom dataPart (no registered trigger)', () => {
     const core = makeCore({ triggers: [{ char: '@', items: [{ id: '1', label: 'Alice' }] }] })
     const editor = createEmptyEditor()
