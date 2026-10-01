@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { MentionInput, version } from 'mentionly'
-import type { DataPart, ContentPart, PopupMode, PopupScrollBehavior, MentionItem, MentionTrigger } from 'mentionly'
+import type { Part, PopupMode, PopupScrollBehavior, MentionItem, MentionTrigger } from 'mentionly'
 import CodeBlock from './components/CodeBlock.vue'
 import FloatingSectionIndicator from './components/FloatingSectionIndicator.vue'
 import { i18n, type Locale } from './i18n'
 
 const inputRef = ref()
-const output = ref<DataPart[]>([])
+const output = ref<Part[]>([])
 const popupMode = ref<PopupMode>('cursor')
 const popupScrollBehavior = ref<PopupScrollBehavior>('reposition')
 const usageBlockEnter = ref(false)
@@ -32,6 +32,7 @@ const tocSections = computed(() => [
   { id: 'sec-avatar', label: t.value.avatarTitle },
   { id: 'sec-insert', label: t.value.insertTitle },
   { id: 'sec-pagination', label: t.value.paginationTitle },
+  { id: 'sec-deprecated', label: t.value.deprecatedTitle },
 ])
 
 // 自定义 @ 数据源
@@ -48,7 +49,7 @@ const triggers = computed(() => [
   {
     char: '@',
     items: customAtItems.value,
-    dataPart: (item: MentionItem) => ({
+    toData: (item: MentionItem) => ({
       dataType: 'mentioned_ref',
       projectId: item.id,
       projectName: item.label,
@@ -61,10 +62,11 @@ const triggers = computed(() => [
       { id: 't2', label: 'urgent', desc: t.value.tagFeature },
       { id: 't3', label: 'docs', desc: t.value.tagRefactor },
     ],
-    schema: {
-      type: 'tag_ref',
-      mapping: { tagId: 'id', tagName: 'label' },
-    },
+    toData: (item: MentionItem) => ({
+      dataType: 'tag_ref',
+      tagId: item.id,
+      tagName: item.label,
+    }),
   },
   {
     char: '/',
@@ -84,12 +86,12 @@ const triggers = computed(() => [
   },
 ])
 
-function onSubmit(parts: DataPart[]) {
+function onSubmit(parts: Part[]) {
   output.value = parts
   console.log('Submit:', parts)
 }
 
-function onChange(parts: ContentPart[]) {
+function onChange(parts: Part[]) {
   console.log('Change:', parts)
 }
 
@@ -97,7 +99,7 @@ function onUsageEnter(e: KeyboardEvent) {
   if (usageBlockEnter.value) e.preventDefault()
 }
 
-function onUsageSubmit(parts: DataPart[]) {
+function onUsageSubmit(parts: Part[]) {
   console.log('Usage submit:', parts)
 }
 
@@ -109,7 +111,7 @@ const customTriggerDemo = computed<MentionTrigger[]>(() => [
       { id: 'var-2', label: 'workspace.branch', desc: t.value.customTriggerVarBranch },
       { id: 'var-3', label: 'request.user', desc: t.value.customTriggerVarUser },
     ],
-    dataPart: (item: MentionItem) => ({
+    toData: (item: MentionItem) => ({
       dataType: 'variable_ref',
       variableId: item.id,
       key: item.label,
@@ -136,7 +138,7 @@ const paginationDemo = computed<MentionTrigger[]>(() => [
       // 模拟网络延迟，便于看到 "Loading more..." 指示器
       return new Promise<MentionItem[]>((resolve) => setTimeout(() => resolve(slice), 400))
     },
-    dataPart: (item: MentionItem) => ({ dataType: 'user_ref', userId: item.id, name: item.label }),
+    toData: (item: MentionItem) => ({ dataType: 'user_ref', userId: item.id, name: item.label }),
   },
 ])
 
@@ -146,7 +148,7 @@ function insertContextNode() {
   insertDemoRef.value?.insertMention({
     id: `ctx-${index}`,
     label: t.value.contextLabel(index),
-    dataPart: {
+    data: {
       dataType: 'context_ref',
       contextId: `ctx-${index}`,
       source: 'selection',
@@ -386,6 +388,14 @@ function loadSaved() {
             />
           </div>
           <CodeBlock :code="t.paginationCode" :copy-label="t.copy" :copied-label="t.copied" />
+        </div>
+
+        <div id="sec-deprecated" class="usage-section">
+          <div class="usage-header">
+            <h4>{{ t.deprecatedTitle }}</h4>
+            <p>{{ t.deprecatedDesc }}</p>
+          </div>
+          <CodeBlock :code="t.deprecatedCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
       </div>
     </section>
