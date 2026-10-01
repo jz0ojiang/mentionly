@@ -78,8 +78,8 @@ export function MentionInput({
         ref={ref}
         className="mi-editor"
         contentEditable
-        role="textbox"
-        aria-multiline="true"
+        // role="combobox" and the aria-* wiring are set by the core; do not add role here,
+        // the core leaves an existing role untouched
         aria-placeholder={placeholder}
         data-placeholder={placeholder}
         style={{ maxHeight }}

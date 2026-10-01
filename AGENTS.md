@@ -50,9 +50,10 @@ Per-package scripts (`bun run --cwd packages/<name> <script>`) provide `build`, 
 
 - `packages/core/` — `@mentionly/core`: `MentionCore` plus DOM utils and types. It depends on the
   browser DOM (`HTMLElement` / `document` / `window` / `Selection` / `Range` / `execCommand`)
-  but **not** on Vue. Public entry: `src/index.ts`. Reserved subpath placeholders
-  (`@mentionly/core/ai-sdk`, `@mentionly/core/mcp`) live in `src/ai-sdk.ts` and `src/mcp.ts` and
-  currently just `export {}`.
+  but **not** on Vue. Public entry: `src/index.ts`. The conversion subpaths
+  `@mentionly/core/ai-sdk` (`src/ai-sdk.ts`) and `@mentionly/core/mcp` (`src/mcp.ts`) have zero
+  runtime dependencies: external formats are typed locally, and the tests check those types against
+  the official `ai` / `@modelcontextprotocol/sdk` types (dev dependencies only).
 - `packages/vue/` — `@mentionly/vue`: `useMention.ts` mirrors core state into refs, and
   `MentionInput.vue` / `MentionList.vue` are the ready-to-use components. Public entry:
   `src/index.ts` (the full public API, including `version`). `src/types.ts` holds the Vue-only
