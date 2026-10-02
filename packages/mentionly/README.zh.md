@@ -175,7 +175,7 @@ export function Composer() {
 ```
 
 `useMention()` 返回：callback `ref`（挂到编辑器上）、core 快照 `state`、无障碍 `ids`，
-以及 `select` / `loadMore` / `close` / `getParts` / `getDataParts` / `getPlainText` / `clear` /
+以及 `select` / `loadMore` / `close` / `getParts` / `getPlainText` / `clear` /
 `setContent` / `focus` / `insertMention` 和底层 `core`。
 
 一个完整、可直接复制的组件（键盘提交、高亮项滚动入可视区、分页、错误状态）在

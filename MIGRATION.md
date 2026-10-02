@@ -168,6 +168,10 @@ be removed in 3.0:
 - `getDataParts()` → use `getParts()`
 - `DataPart` / `ContentPart` types → use `Part` / `TextPart` / `MentionPart`
 
+> These legacy APIs live in `@mentionly/core` and are surfaced by `@mentionly/vue` (and the
+> `mentionly` forwarding package). `@mentionly/react` and `@mentionly/svelte` are new in 2.0 and
+> never exposed `getDataParts()`, `DataPart` or `ContentPart`.
+
 `getDataParts()` output is **identical to 1.x** (including the flattened `{ type: 'data', … }`
 parts, custom `type` overrides and the original NBSP bytes in text). The `DataPart` type was
 widened from `{ type: 'data' } & Record<string, any>` to `{ type: string } & Record<string, any>`
@@ -239,7 +243,8 @@ The second argument is unchanged: `{ appendSpace?: boolean, focus?: boolean }`.
 `setContent()` accepts both shapes and detects them per part, so you can keep feeding it content
 you saved with 1.x. The first time legacy input is seen it logs
 `[mentionly] setContent(ContentPart[]) is deprecated; use Part[] instead.` — **once per page
-load**, not once per call.
+load**, not once per call. The React and Svelte adapters type `setContent()` as
+`(parts: Part[]) => void` and do not accept the 1.x `ContentPart[]` shape.
 
 **How to change it**
 

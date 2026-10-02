@@ -178,7 +178,7 @@ export function Composer() {
 ```
 
 `useMention()` returns a callback `ref` (attach it to the editor), the core snapshot as `state`,
-the a11y `ids`, plus `select` / `loadMore` / `close` / `getParts` / `getDataParts` /
+the a11y `ids`, plus `select` / `loadMore` / `close` / `getParts` /
 `getPlainText` / `clear` / `setContent` / `focus` / `insertMention` and the underlying `core`.
 
 A complete, copyable component — keyboard submit, scroll-into-view, pagination and error state —
