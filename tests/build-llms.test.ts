@@ -129,7 +129,8 @@ describe('build-llms', () => {
     const full = join(outDir, 'playground-dist', 'llms-full.txt')
     expect(existsSync(site) && existsSync(full)).toBe(true)
 
-    const notes = readFileSync(join(ROOT, 'llms', 'notes.md'), 'utf8').trim()
+    // The generator normalizes sources to LF; compare against the same normalization.
+    const notes = readFileSync(join(ROOT, 'llms', 'notes.md'), 'utf8').replace(/\r\n/g, '\n').trim()
     const siteText = readFileSync(site, 'utf8')
     expect(siteText).toContain(notes)
     expect(siteText.startsWith('# mentionly\n')).toBe(true)

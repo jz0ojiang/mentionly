@@ -85,7 +85,9 @@ const rel = (file: string): string => relative(ROOT, file).split('\\').join('/')
 
 function readFileOrThrow(file: string): string {
   if (!existsSync(file)) throw new Error(`build-llms: missing source file: ${rel(file)}`)
-  return readFileSync(file, 'utf8')
+  // Normalize to LF: on Windows checkouts (core.autocrlf) sources arrive with CRLF, and the
+  // published llms files must not depend on how the repository was checked out.
+  return readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
 }
 
 function readJsonOrThrow(file: string): Record<string, unknown> {
