@@ -3,6 +3,7 @@
 [![tests](https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml/badge.svg)](https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml)
 [![npm](https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm)](https://www.npmjs.com/package/mentionly)
 [![downloads](https://img.shields.io/npm/dm/mentionly?color=10b981&label=downloads&logo=npm)](https://www.npmjs.com/package/mentionly)
+[![llms.txt](https://img.shields.io/badge/llms.txt-for_AI_agents-7c3aed)](https://im0o.top/mentionly/llms.txt)
 
 面向 AI 聊天场景的 mention 输入：一个框架无关的 `contenteditable` 引擎
 （`@mentionly/core`），加上开箱即用的 Vue 3 组件与 React / Svelte 的 headless 适配层。
@@ -10,6 +11,14 @@
 原子 mention 实体、异步与分页数据源、输入法（IME）处理与序列化 —— core 零运行时依赖。
 
 [在线演示](https://im0o.top/mentionly?lang=zh) | [English](./README.md) | [1.x 迁移指南](./MIGRATION.md)
+
+## 给 AI agent 的文档
+
+为编程 agent 准备的文档：
+
+- [`llms.txt`](https://im0o.top/mentionly/llms.txt)：安装方式、输出格式，以及 agent 最容易写错的接入规则。
+- [`llms-full.txt`](https://im0o.top/mentionly/llms-full.txt)：所有包的 README、迁移指南和完整示例组件合成的一个文件。
+- 每个包都随包带一份与已安装版本一致的 `llms.txt`：`node_modules/mentionly/llms.txt` 或 `node_modules/@mentionly/<name>/llms.txt`。
 
 ## 包一览
 

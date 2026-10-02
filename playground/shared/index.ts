@@ -12,9 +12,11 @@
  *   demo-data.ts 演示数据与 triggers 定义
  *   sections.ts  浮动目录的分区列表
  *   frameworks.ts 框架清单与切换链接（也被三个 vite 配置复用）
+ *   badges.ts    页头徽章列表
  */
 export * from './i18n'
 export * from './locale'
 export * from './demo-data'
 export * from './sections'
 export * from './frameworks'
+export * from './badges'

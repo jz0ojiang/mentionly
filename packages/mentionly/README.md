@@ -3,6 +3,7 @@
 [![tests](https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml/badge.svg)](https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml)
 [![npm](https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm)](https://www.npmjs.com/package/mentionly)
 [![downloads](https://img.shields.io/npm/dm/mentionly?color=10b981&label=downloads&logo=npm)](https://www.npmjs.com/package/mentionly)
+[![llms.txt](https://img.shields.io/badge/llms.txt-for_AI_agents-7c3aed)](https://im0o.top/mentionly/llms.txt)
 
 Mention input for AI chat scenarios: a framework-agnostic `contenteditable` engine
 (`@mentionly/core`) with a ready-to-use Vue 3 component and headless React / Svelte adapters.
@@ -11,6 +12,14 @@ Atomic mention entities, async and paginated data sources, IME handling and seri
 zero runtime dependencies in the core.
 
 [Live Demo](https://im0o.top/mentionly) | [中文文档](https://github.com/jz0ojiang/mentionly/blob/main/README.zh.md) | [Migrating from 1.x](https://github.com/jz0ojiang/mentionly/blob/main/MIGRATION.md)
+
+## For AI agents
+
+Documentation written for coding agents:
+
+- [`llms.txt`](https://im0o.top/mentionly/llms.txt): setup, the output format, and the integration rules agents most often get wrong.
+- [`llms-full.txt`](https://im0o.top/mentionly/llms-full.txt): every package README, the migration guide and the complete example components in one file.
+- Every package ships an `llms.txt` matching the installed version: `node_modules/mentionly/llms.txt` or `node_modules/@mentionly/<name>/llms.txt`.
 
 ## Packages
 

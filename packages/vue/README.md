@@ -13,6 +13,9 @@ This package is a thin Vue layer over the framework-agnostic
 
 Vue 3 is a peer dependency; `@mentionly/core` is installed automatically.
 
+
+> **For AI agents:** this package ships `llms.txt` (`node_modules/@mentionly/vue/llms.txt`) with setup and integration rules for its installed version. Site-wide docs: [llms.txt](https://im0o.top/mentionly/llms.txt), [llms-full.txt](https://im0o.top/mentionly/llms-full.txt).
+
 ## Install
 
 ```bash

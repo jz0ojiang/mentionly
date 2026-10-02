@@ -14,6 +14,9 @@ Vue, React and Svelte users normally install the matching adapter instead:
 [`@mentionly/svelte`](https://www.npmjs.com/package/@mentionly/svelte), or the forwarding
 [`mentionly`](https://www.npmjs.com/package/mentionly) package.
 
+
+> **For AI agents:** this package ships `llms.txt` (`node_modules/@mentionly/core/llms.txt`) with setup and integration rules for its installed version. Site-wide docs: [llms.txt](https://im0o.top/mentionly/llms.txt), [llms-full.txt](https://im0o.top/mentionly/llms-full.txt).
+
 ## Install
 
 ```bash

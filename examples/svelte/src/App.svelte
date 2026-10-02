@@ -17,6 +17,7 @@
   import { detectLocale, alternateLocale } from '@playground/shared/locale'
   import { uiStrings, type Locale } from '@playground/shared/i18n'
   import { resolveSections } from '@playground/shared/sections'
+  import { BADGES } from '@playground/shared/badges'
   import {
     parseCustomAtItems,
     createDemoTriggers,
@@ -105,42 +106,11 @@
     </div>
   </div>
   <div class="header-actions">
-    <a
-      class="badge"
-      href="https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml"
-      target="_blank"
-      rel="noreferrer"
-    >
-      <img
-        src="https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml/badge.svg"
-        alt="tests"
-      />
-    </a>
-    <a
-      class="badge"
-      href="https://www.npmjs.com/package/mentionly"
-      target="_blank"
-      rel="noreferrer"
-    >
-      <img
-        src="https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm"
-        alt="npm version"
-      />
-    </a>
-    <a
-      class="badge"
-      href="https://www.npmjs.com/package/mentionly"
-      target="_blank"
-      rel="noreferrer"
-    >
-      <img
-        src="https://img.shields.io/npm/dm/mentionly?color=10b981&label=downloads&logo=npm"
-        alt="npm downloads"
-      />
-    </a>
-    <a class="badge" href="https://github.com/jz0ojiang/mentionly" target="_blank" rel="noreferrer">
-      <img src="https://img.shields.io/badge/GitHub-Repo-111827?logo=github" alt="github repo" />
-    </a>
+    {#each BADGES as b (b.alt)}
+      <a class="badge" href={b.href} target="_blank" rel="noreferrer">
+        <img src={b.src} alt={b.alt} />
+      </a>
+    {/each}
   </div>
   <p class="hint">
     {t.hint[0]}<code>@</code>{t.hint[1]}<code>#</code>{t.hint[2]}<code>/</code>{t.hint[3]}

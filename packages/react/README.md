@@ -11,6 +11,9 @@ events. There are no published components — you render the editor and the drop
 
 React (`>=18`) is a peer dependency; `@mentionly/core` is installed automatically.
 
+
+> **For AI agents:** this package ships `llms.txt` (`node_modules/@mentionly/react/llms.txt`) with setup and integration rules for its installed version. Site-wide docs: [llms.txt](https://im0o.top/mentionly/llms.txt), [llms-full.txt](https://im0o.top/mentionly/llms-full.txt).
+
 ## Install
 
 ```bash
