@@ -10,10 +10,11 @@
   "scripts": {
     "dev": "vite --config vite.playground.ts",
     "build": "bun run --cwd packages/core build && bun run --cwd packages/vue build && bun run --cwd packages/mentionly build && bun run --cwd packages/react build && bun run --cwd packages/svelte build",
+    "llms": "bun scripts/build-llms.ts",
     "test": "vitest",
     "test:ci": "vitest run",
     "typecheck": "bun run --cwd packages/core typecheck && bun run --cwd packages/vue typecheck && bun run --cwd packages/mentionly typecheck && bun run --cwd packages/react typecheck && bun run --cwd packages/svelte typecheck && vue-tsc --noEmit -p tsconfig.json",
-    "build:playground": "vite build --config vite.playground.ts && bun run --cwd examples/react build:pages && bun run --cwd examples/svelte build:pages",
+    "build:playground": "vite build --config vite.playground.ts && bun run --cwd examples/react build:pages && bun run --cwd examples/svelte build:pages && bun scripts/build-llms.ts site",
     "build:examples": "bun run --cwd examples/react build && bun run --cwd examples/svelte build",
     "dev:react": "bun run --cwd examples/react dev",
     "dev:svelte": "bun run --cwd examples/svelte dev"

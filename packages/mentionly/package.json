@@ -16,7 +16,8 @@
   },
   "files": [
     "dist",
-    "README.zh.md"
+    "README.zh.md",
+    "llms.txt"
   ],
   "repository": {
     "type": "git",
@@ -26,7 +27,7 @@
   "homepage": "https://im0o.top/mentionly",
   "bugs": "https://github.com/jz0ojiang/mentionly/issues",
   "scripts": {
-    "build": "vite build && vite build --config vite.style.config.ts",
+    "build": "vite build && vite build --config vite.style.config.ts && bun ../../scripts/build-llms.ts mentionly",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {

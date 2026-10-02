@@ -24,7 +24,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "llms.txt"
   ],
   "repository": {
     "type": "git",
@@ -34,7 +35,7 @@
   "homepage": "https://im0o.top/mentionly",
   "bugs": "https://github.com/jz0ojiang/mentionly/issues",
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && bun ../../scripts/build-llms.ts core",
     "test": "vitest",
     "test:ci": "vitest run",
     "typecheck": "tsc --noEmit"

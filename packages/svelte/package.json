@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "llms.txt"
   ],
   "repository": {
     "type": "git",
@@ -22,7 +23,7 @@
   "homepage": "https://im0o.top/mentionly",
   "bugs": "https://github.com/jz0ojiang/mentionly/issues",
   "scripts": {
-    "build": "svelte-package -i src -o dist --tsconfig tsconfig.build.json",
+    "build": "svelte-package -i src -o dist --tsconfig tsconfig.build.json && bun ../../scripts/build-llms.ts svelte",
     "test": "vitest",
     "test:ci": "vitest run",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
