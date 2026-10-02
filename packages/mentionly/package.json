@@ -1,6 +1,6 @@
 {
   "name": "mentionly",
-  "version": "2.0.0-next.0",
+  "version": "2.0.0",
   "type": "module",
   "description": "Lightweight Vue 3 mention input component for AI chat scenarios",
   "main": "./dist/index.cjs",
@@ -31,7 +31,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@mentionly/vue": "^2.0.0-next.0"
+    "@mentionly/vue": "^2.0.0"
   },
   "peerDependencies": {
     "vue": "^3.3.0"
