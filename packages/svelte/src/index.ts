@@ -13,8 +13,6 @@ export type {
   TextPart,
   MentionPart,
   Part,
-  ContentPart,
-  DataPart,
   InsertMentionPayload,
   InsertMentionOptions,
   MentionCoreOptions,

@@ -64,7 +64,6 @@ export function createMention(options: MentionCoreOptions): CreateMentionReturn 
     loadMore: core.loadMore,
     close: core.close,
     getParts: core.getParts,
-    getDataParts: core.getDataParts,
     getPlainText: core.getPlainText,
     clear: core.clear,
     setContent: core.setContent,

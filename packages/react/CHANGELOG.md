@@ -12,11 +12,10 @@
   - **New `@mentionly/react`** (headless `useMention` hook) and **`@mentionly/svelte`** (Svelte 5
     `createMention()` + `use:mention`). `@mentionly/vue` is now a thin adapter over the core and
     keeps its component API, and `mentionly` stays a forwarding package for it.
-  - **New content format**: `getParts()` returns `Part[]` (`TextPart | MentionPart`) instead of
-    `ContentPart[]`, and `MentionInput`'s `submit` / `change` events now carry `Part[]`. The
-    mention payload is produced by `MentionTrigger.toData(item)` and read back as `data`;
-    `dataPart`, `schema`, `getDataParts()`, `DataPart` and `ContentPart` still work but are
-    deprecated and will be removed in 3.0.
+  - **New content format**: `getParts()` returns `Part[]` (`TextPart | MentionPart`). As a new 2.0
+    package, `@mentionly/react` has no 1.x compatibility API: `setContent()` accepts `Part[]`
+    only. The deprecated 1.x mapping APIs live in `@mentionly/core` and `@mentionly/vue` and are
+    removed in 3.0.
   - **New `error` state and `#error` slot** for failed data sources, plus `ids` for combobox a11y
     wiring. `MentionList` gained a required `ids` prop, and changing `triggers` now closes the
     dropdown and aborts in-flight requests.

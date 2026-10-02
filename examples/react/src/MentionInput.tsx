@@ -32,8 +32,6 @@ import {
 } from 'react'
 import { useMention } from '@mentionly/react'
 import type {
-  ContentPart,
-  DataPart,
   InsertMentionOptions,
   InsertMentionPayload,
   MentionCoreIds,
@@ -48,10 +46,8 @@ import './MentionInput.css'
 /** 命令式方法（用 ref 拿到，对应 Vue 的 defineExpose） */
 export interface MentionInputHandle {
   insertMention: (payload: InsertMentionPayload, options?: InsertMentionOptions) => boolean
-  setContent: (parts: Part[] | ContentPart[]) => void
+  setContent: (parts: Part[]) => void
   getParts: () => Part[]
-  /** @deprecated 将在 3.0 移除，请改用 getParts()。 */
-  getDataParts: () => DataPart[]
   getPlainText: () => string
   clear: () => void
   focus: () => void
@@ -306,7 +302,6 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(fu
     select,
     loadMore,
     getParts,
-    getDataParts,
     getPlainText,
     clear,
     setContent,
@@ -316,8 +311,8 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(fu
 
   useImperativeHandle(
     ref,
-    () => ({ insertMention, setContent, getParts, getDataParts, getPlainText, clear, focus, ids }),
-    [insertMention, setContent, getParts, getDataParts, getPlainText, clear, focus, ids],
+    () => ({ insertMention, setContent, getParts, getPlainText, clear, focus, ids }),
+    [insertMention, setContent, getParts, getPlainText, clear, focus, ids],
   )
 
   const submit = useCallback(() => {

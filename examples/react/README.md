@@ -119,9 +119,8 @@ Vue 版的 `<slot>` 在这里对应成 render props（`children` 是函数形式
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
 | `insertMention` | `(payload: InsertMentionPayload, options?: InsertMentionOptions) => boolean` | 在当前光标处插入一个原子 mention 节点 |
-| `setContent` | `(parts: Part[] \| ContentPart[]) => void` | 用 `Part[]` 反序列化填充编辑器 |
+| `setContent` | `(parts: Part[]) => void` | 用 `Part[]` 反序列化填充编辑器 |
 | `getParts` | `() => Part[]` | 序列化为 `Part[]` |
-| `getDataParts` | `() => DataPart[]` | 1.x 接口，**已废弃**，请用 `getParts()` |
 | `getPlainText` | `() => string` | 取纯文本 |
 | `clear` | `() => void` | 清空 |
 | `focus` | `() => void` | 聚焦编辑器 |

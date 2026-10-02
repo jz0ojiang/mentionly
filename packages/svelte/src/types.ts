@@ -1,7 +1,5 @@
 import type { Action } from 'svelte/action'
 import type {
-  ContentPart,
-  DataPart,
   InsertMentionOptions,
   InsertMentionPayload,
   MentionCore,
@@ -37,10 +35,8 @@ export interface CreateMentionReturn {
   loadMore(): void
   close(): void
   getParts(): Part[]
-  /** @deprecated 将在 3.0 移除，请改用 `getParts()`。 */
-  getDataParts(): DataPart[]
   getPlainText(): string
   clear(): void
-  setContent(parts: Part[] | ContentPart[]): void
+  setContent(parts: Part[]): void
   focus(): void
 }

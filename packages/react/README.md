@@ -116,10 +116,9 @@ The examples in the repository implement all of these.
 | `loadMore()` | Append the next page (paginated function sources) |
 | `close()` | Close the popup and abort in-flight requests |
 | `getParts()` | Read the editor into `Part[]` |
-| `getDataParts()` | **Deprecated** (3.0) — 1.x `DataPart[]` output |
 | `getPlainText()` | Editor content as plain text |
 | `clear()` | Empty the editor |
-| `setContent(parts)` | Restore from `Part[]` (or legacy `ContentPart[]`) |
+| `setContent(parts)` | Restore from `Part[]` |
 | `focus()` | Focus the editor, caret at the end |
 
 Options are diffed per render (`triggers`, `insertSpaceAfter`, `popupMode`,

@@ -1,7 +1,5 @@
 import type { MentionCore } from '@mentionly/core'
 import type {
-  ContentPart,
-  DataPart,
   InsertMentionOptions,
   InsertMentionPayload,
   MentionCoreIds,
@@ -37,12 +35,10 @@ export interface UseMentionReturn {
 
   // ── 内容序列化 ──
   getParts: () => Part[]
-  /** @deprecated 将在 3.0 移除，请改用 `getParts()`。 */
-  getDataParts: () => DataPart[]
   getPlainText: () => string
 
   // ── 编辑器操作 ──
   clear: () => void
-  setContent: (parts: Part[] | ContentPart[]) => void
+  setContent: (parts: Part[]) => void
   focus: () => void
 }
