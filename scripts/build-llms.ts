@@ -9,7 +9,7 @@
  *   the React / Svelte example components and `MIGRATION.md`), written by
  *   `build:playground`.
  *
- * The `[generated]` lines (`{{exports}}` and `{{returns}}`) are read from the
+ * The generated lines (`{{exports}}` and `{{returns}}`) are read from the
  * package sources through the TypeScript compiler API, so they cannot drift
  * from the code that ships. Everything else is hand-written in `llms/`.
  *

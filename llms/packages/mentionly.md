@@ -2,7 +2,7 @@
 
 > Mention input for AI chat composers, for Vue 3. `mentionly` re-exports `@mentionly/vue`: both names give the same API.
 
-[generated] Exports: {{exports}}
+Exports: {{exports}}
 
 `MentionInput`:
 - props: `triggers`, `placeholder`, `disabled`, `maxHeight` (default `'200px'`), `submitOnEnter` (default `true`), `onEnter(e)` (call `e.preventDefault()` to block the submit), `popupMode` (default `'fixed'`), `popupScrollBehavior` (default `'reposition'`), `teleport` (default `true`).

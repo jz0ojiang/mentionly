@@ -13,9 +13,9 @@ const packageVersion = (spec: PackageSpec) =>
   (JSON.parse(readFileSync(join(ROOT, 'packages', spec.dir, 'package.json'), 'utf8')) as { version: string }).version
 
 const readGeneratedExports = (text: string) => {
-  const line = text.split('\n').find((row) => row.startsWith('[generated] Exports: '))
-  if (!line) throw new Error('no [generated] Exports: line')
-  const body = line.replace('[generated] Exports: ', '').replace(/\.$/, '')
+  const line = text.split('\n').find((row) => row.startsWith('Exports: '))
+  if (!line) throw new Error('no Exports: line')
+  const body = line.replace('Exports: ', '').replace(/\.$/, '')
   const [runtimePart, typesPart] = body.split('; types ')
   const names = (part: string | undefined) => [...(part ?? '').matchAll(/`([^`]+)`/g)].map((m) => m[1])
   return { runtime: names(runtimePart), types: names(typesPart) }
