@@ -170,147 +170,26 @@ watch(() => props.sections, computeActive, { deep: true })
 
 <template>
   <nav
-    class="fsi"
-    :class="{ 'fsi--open': open }"
+    class="pg-fsi"
+    :class="{ 'pg-fsi--open': open }"
     aria-label="Section navigation"
     @mouseenter="onPointerEnter"
     @mouseleave="onPointerLeave"
   >
-    <ul class="fsi-list no-scrollbar">
+    <ul class="pg-fsi-list">
       <li v-for="(section, index) in sections" :key="section.id">
         <button
           type="button"
-          class="fsi-item"
-          :class="{ 'fsi-item--active': section.id === activeId }"
+          class="pg-fsi-item"
+          :class="{ 'pg-fsi-item--active': section.id === activeId }"
           :aria-label="section.label ?? `Section ${index + 1}`"
           :aria-current="section.id === activeId ? 'true' : undefined"
           @click="handleClick(section.id)"
         >
-          <span class="fsi-label">{{ section.label ?? `Section ${index + 1}` }}</span>
-          <span class="fsi-bar" aria-hidden="true" />
+          <span class="pg-fsi-label">{{ section.label ?? `Section ${index + 1}` }}</span>
+          <span class="pg-fsi-bar" aria-hidden="true" />
         </button>
       </li>
     </ul>
   </nav>
 </template>
-
-<style scoped>
-/* container: fixed right-4 top-1/2 -translate-y-1/2 z-20 */
-.fsi {
-  position: fixed;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 20;
-}
-
-/* list hugs the right edge so titles expand leftward; collapsed = tight */
-.fsi-list {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  max-height: 50lvh;
-  overflow-y: auto;
-  padding: 4px;
-  margin: 0;
-  list-style: none;
-  transition: gap 0.2s ease;
-}
-
-/* expanded: a touch more breathing room between rows (no card / shadow) */
-.fsi--open .fsi-list,
-.fsi:focus-within .fsi-list {
-  gap: 6px;
-}
-
-/* hide scrollbar across browsers */
-.no-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE / old Edge */
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome / Safari */
-}
-
-/* item: collapsed = a thin bar; expands into a labelled pill */
-.fsi-item {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 3px 0;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, padding 0.2s ease;
-}
-
-/* keyboard focus: no big native outline; reuse the hover look instead */
-.fsi-item:focus {
-  outline: none;
-}
-.fsi-item:focus-visible {
-  background: #f3f4f6;
-  color: #111827;
-}
-
-/* the small bar shown when collapsed: h-[2px] w-[18px] rounded-full */
-.fsi-bar {
-  flex: none;
-  height: 2px;
-  width: 18px;
-  border-radius: 999px;
-  background: #d1d5db;
-  transition: background-color 0.15s, opacity 0.15s ease, width 0.2s ease;
-}
-.fsi-item--active .fsi-bar {
-  background: #3b82f6;
-}
-
-/* the title shown when expanded, with a small slide-in */
-.fsi-label {
-  max-width: 0;
-  opacity: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: 12px;
-  line-height: 0; /* collapsed: contribute no height so rows hug the bar */
-  transform: translateX(6px);
-  transition: max-width 0.25s ease, opacity 0.2s ease, transform 0.25s ease, line-height 0.2s ease;
-}
-
-/* expand to titles on hover or keyboard focus within the TOC area */
-.fsi--open .fsi-item,
-.fsi:focus-within .fsi-item {
-  padding: 6px 10px;
-}
-.fsi--open .fsi-bar,
-.fsi:focus-within .fsi-bar {
-  opacity: 0;
-  width: 0;
-}
-.fsi--open .fsi-label,
-.fsi:focus-within .fsi-label {
-  max-width: 240px;
-  opacity: 1;
-  line-height: 1.2;
-  transform: translateX(0);
-}
-
-/* active title color, emphasized when expanded */
-.fsi-item--active {
-  color: #3b82f6;
-}
-.fsi--open .fsi-item--active .fsi-label,
-.fsi:focus-within .fsi-item--active .fsi-label {
-  font-weight: 600;
-}
-
-/* hovered title is visually distinct from its non-hovered siblings */
-.fsi--open .fsi-item:hover {
-  background: #f3f4f6;
-  color: #111827;
-}
-</style>

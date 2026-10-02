@@ -1,0 +1,563 @@
+/*
+ * 共享层：playground 页面的全部视觉样式（纯 CSS，不含任何框架依赖）。
+ * 被 playground(Vue)、examples/react、examples/svelte 三个应用共用，改这里三个页面同时生效。
+ *
+ * 分区：
+ *   1. prism 代码高亮主题（三个应用共用同一套高亮样式）
+ *   2. 页面骨架与通用控件
+ *   3. 代码块（<CodeBlock> 的样式，各框架实现里沿用同样的类名）
+ *   4. 框架切换栏
+ *   5. 右侧浮动目录（pg-fsi-* 前缀，全局类名）
+ */
+
+/* ── 1. prism 主题 ── */
+@import 'prismjs/themes/prism-okaidia.css';
+
+/* ── 2. 页面骨架与通用控件 ── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.playground {
+  max-width: 640px;
+  margin: 60px auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-size: 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.badge:hover {
+  opacity: 0.85;
+}
+
+.badge img {
+  height: 18px;
+  display: block;
+}
+
+.lang-btn {
+  padding: 2px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: all 0.15s;
+}
+
+.lang-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.version {
+  font-size: 13px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.hint {
+  color: #6b7280;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.section {
+  padding: 18px 0 22px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #374151;
+  margin-bottom: 14px;
+}
+
+.hint code {
+  background: #e5e7eb;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.input-area {
+  margin-bottom: 12px;
+}
+
+.controls {
+  display: grid;
+  gap: 12px;
+}
+
+.usage-demo {
+  margin: 10px 0 12px;
+}
+
+.usage-controls {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.usage-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-switch {
+  margin-bottom: 16px;
+}
+
+.streaming-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.mode-switch label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.mode-switch select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.actions button {
+  padding: 6px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.actions button:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.output pre {
+  font-size: 12px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.output-empty {
+  font-size: 12px;
+  color: #9ca3af;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.usage {
+  margin-top: 4px;
+}
+
+.usage-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fff;
+}
+
+.usage-header {
+  margin-bottom: 10px;
+}
+
+.usage-header h4 {
+  font-size: 15px;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.usage-header p {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.mention-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mention-item.active,
+.mention-item:hover {
+  background: #f3f4f6;
+}
+
+.avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.inner-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 8px 8px;
+}
+
+.send-btn {
+  padding: 4px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #3b82f6;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.extra-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.focus-btn {
+  padding: 2px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.custom-at {
+  margin-bottom: 16px;
+}
+
+.custom-at label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.custom-at-input {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  width: 100%;
+}
+
+.custom-at-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.custom-at-preview {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.card-actions {
+  margin-top: 8px;
+}
+
+.card-btn {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.card-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+/* ── 3. 代码块 ── */
+.code-block {
+  font-size: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 14px;
+  border-radius: 6px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.code-block code,
+.code-block[class*='language-'] {
+  font-size: 12px;
+}
+
+.code-block-wrap {
+  position: relative;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.3);
+  background: rgba(15, 23, 42, 0.75);
+  color: #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.copy-btn:hover {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+/* ── 4. 框架切换栏（Vue / React / Svelte） ── */
+.fw-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.fw-switch-item {
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.fw-switch-item:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.fw-switch-item--active,
+.fw-switch-item--active:hover {
+  background: #3b82f6;
+  color: #fff;
+}
+
+/* ── 5. 右侧浮动目录（FloatingSectionIndicator，全局类名统一 pg-fsi- 前缀） ── */
+/* container: fixed right-4 top-1/2 -translate-y-1/2 z-20 */
+.pg-fsi {
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+}
+
+/* list hugs the right edge so titles expand leftward; collapsed = tight */
+.pg-fsi-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-height: 50lvh;
+  overflow-y: auto;
+  padding: 4px;
+  margin: 0;
+  list-style: none;
+  transition: gap 0.2s ease;
+  /* hide scrollbar across browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / old Edge */
+}
+
+.pg-fsi-list::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
+}
+
+/* expanded: a touch more breathing room between rows (no card / shadow) */
+.pg-fsi--open .pg-fsi-list,
+.pg-fsi:focus-within .pg-fsi-list {
+  gap: 6px;
+}
+
+/* item: collapsed = a thin bar; expands into a labelled pill */
+.pg-fsi-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 3px 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, padding 0.2s ease;
+}
+
+/* keyboard focus: no big native outline; reuse the hover look instead */
+.pg-fsi-item:focus {
+  outline: none;
+}
+
+.pg-fsi-item:focus-visible {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* the small bar shown when collapsed: h-[2px] w-[18px] rounded-full */
+.pg-fsi-bar {
+  flex: none;
+  height: 2px;
+  width: 18px;
+  border-radius: 999px;
+  background: #d1d5db;
+  transition: background-color 0.15s, opacity 0.15s ease, width 0.2s ease;
+}
+
+.pg-fsi-item--active .pg-fsi-bar {
+  background: #3b82f6;
+}
+
+/* the title shown when expanded, with a small slide-in */
+.pg-fsi-label {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 0; /* collapsed: contribute no height so rows hug the bar */
+  transform: translateX(6px);
+  transition: max-width 0.25s ease, opacity 0.2s ease, transform 0.25s ease, line-height 0.2s ease;
+}
+
+/* expand to titles on hover or keyboard focus within the TOC area */
+.pg-fsi--open .pg-fsi-item,
+.pg-fsi:focus-within .pg-fsi-item {
+  padding: 6px 10px;
+}
+
+.pg-fsi--open .pg-fsi-bar,
+.pg-fsi:focus-within .pg-fsi-bar {
+  opacity: 0;
+  width: 0;
+}
+
+.pg-fsi--open .pg-fsi-label,
+.pg-fsi:focus-within .pg-fsi-label {
+  max-width: 240px;
+  opacity: 1;
+  line-height: 1.2;
+  transform: translateX(0);
+}
+
+/* active title color, emphasized when expanded */
+.pg-fsi-item--active {
+  color: #3b82f6;
+}
+
+.pg-fsi--open .pg-fsi-item--active .pg-fsi-label,
+.pg-fsi:focus-within .pg-fsi-item--active .pg-fsi-label {
+  font-weight: 600;
+}
+
+/* hovered title is visually distinct from its non-hovered siblings */
+.pg-fsi--open .pg-fsi-item:hover {
+  background: #f3f4f6;
+  color: #111827;
+}

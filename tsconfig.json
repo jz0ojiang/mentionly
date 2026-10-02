@@ -16,9 +16,13 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
-      "mentionly": ["./src/index.ts"]
+      "@playground/shared": ["./playground/shared/index.ts"],
+      "@playground/shared/*": ["./playground/shared/*"],
+      "mentionly": ["./packages/mentionly/src/index.ts"],
+      "@mentionly/vue": ["./packages/vue/src/index.ts"],
+      "@mentionly/core": ["./packages/core/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "playground/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["playground/**/*"],
+  "exclude": ["node_modules", "dist", "playground-dist"]
 }

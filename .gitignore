@@ -4,6 +4,7 @@ node_modules
 # build output
 dist
 playground-dist
+packages/*/llms.txt
 out
 *.tgz
 

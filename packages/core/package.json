@@ -1,0 +1,61 @@
+{
+  "name": "@mentionly/core",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Framework-agnostic contenteditable mention engine powering mentionly",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./ai-sdk": {
+      "types": "./dist/ai-sdk.d.ts",
+      "import": "./dist/ai-sdk.mjs",
+      "require": "./dist/ai-sdk.cjs"
+    },
+    "./mcp": {
+      "types": "./dist/mcp.d.ts",
+      "import": "./dist/mcp.mjs",
+      "require": "./dist/mcp.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "llms.txt"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jz0ojiang/mentionly.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://im0o.top/mentionly",
+  "bugs": "https://github.com/jz0ojiang/mentionly/issues",
+  "scripts": {
+    "build": "vite build && bun ../../scripts/build-llms.ts core",
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "ai": "^7.0.126",
+    "jsdom": "^28.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.18"
+  },
+  "keywords": [
+    "mention",
+    "contenteditable",
+    "at-mention",
+    "ai",
+    "chat"
+  ],
+  "author": "jz0ojiang <hi@im0o.top> (https://github.com/jz0ojiang)",
+  "license": "MIT"
+}

@@ -1,13 +1,26 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { MentionInput, version } from 'mentionly'
-import type { DataPart, ContentPart, PopupMode, PopupScrollBehavior, MentionItem, MentionTrigger } from 'mentionly'
+import type { Part, PopupMode, PopupScrollBehavior, MentionItem, MentionTrigger } from 'mentionly'
 import CodeBlock from './components/CodeBlock.vue'
 import FloatingSectionIndicator from './components/FloatingSectionIndicator.vue'
-import { i18n, type Locale } from './i18n'
+import FrameworkSwitch from './components/FrameworkSwitch.vue'
+import { detectLocale, alternateLocale } from '@playground/shared/locale'
+import { uiStrings, type Locale } from '@playground/shared/i18n'
+import { resolveSections } from '@playground/shared/sections'
+import { BADGES } from '@playground/shared/badges'
+import {
+  parseCustomAtItems,
+  createDemoTriggers,
+  createCustomTriggerDemo,
+  createPaginationTrigger,
+  createInsertPayload,
+  getSavedParts,
+} from '@playground/shared/demo-data'
+import { code } from './code'
 
 const inputRef = ref()
-const output = ref<DataPart[]>([])
+const output = ref<Part[]>([])
 const popupMode = ref<PopupMode>('cursor')
 const popupScrollBehavior = ref<PopupScrollBehavior>('reposition')
 const usageBlockEnter = ref(false)
@@ -15,81 +28,31 @@ const insertDemoRef = ref()
 const insertCount = ref(0)
 
 // ── i18n ──
-const urlLang = new URLSearchParams(window.location.search).get('lang')
-const defaultLocale: Locale = urlLang === 'zh' || urlLang === 'en' ? urlLang : navigator.language.startsWith('zh') ? 'zh' : 'en'
-const locale = ref<Locale>(defaultLocale)
+// 界面文案来自共享层，示例代码来自本应用（Vue 代码片段不进共享层）
+const locale = ref<Locale>(detectLocale())
 
-const t = computed(() => i18n[locale.value])
+const t = computed(() => ({ ...uiStrings(locale.value), ...code[locale.value] }))
 
-// 右侧浮动 TOC 跟踪的区块（顺序与文档顺序一致）
-const tocSections = computed(() => [
-  { id: 'sec-config', label: 'Playground' },
-  { id: 'sec-editor', label: 'Editor' },
-  { id: 'sec-output', label: 'Submit Output' },
-  { id: 'sec-basic', label: t.value.basicTitle },
-  { id: 'sec-custom-trigger', label: t.value.customTriggerTitle },
-  { id: 'sec-advanced', label: t.value.advancedTitle },
-  { id: 'sec-avatar', label: t.value.avatarTitle },
-  { id: 'sec-insert', label: t.value.insertTitle },
-  { id: 'sec-pagination', label: t.value.paginationTitle },
-])
+// 右侧浮动 TOC 跟踪的区块（顺序与文档顺序一致；「Deprecated 1.x API」只有 Vue 页有）
+const tocSections = computed(() => resolveSections(uiStrings(locale.value), { includeDeprecated: true }))
 
 // 自定义 @ 数据源
 const customAtInput = ref('John Smith, Alice Johnson, Michael Brown, Emily Davis, David Wilson')
-const customAtItems = computed<MentionItem[]>(() => {
-  return customAtInput.value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((label, i) => ({ id: String(i + 1), label }))
-})
+const customAtItems = computed<MentionItem[]>(() => parseCustomAtItems(customAtInput.value))
 
-const triggers = computed(() => [
-  {
-    char: '@',
-    items: customAtItems.value,
-    dataPart: (item: MentionItem) => ({
-      dataType: 'mentioned_ref',
-      projectId: item.id,
-      projectName: item.label,
-    }),
-  },
-  {
-    char: '#',
-    items: [
-      { id: 't1', label: 'design', desc: t.value.tagBug },
-      { id: 't2', label: 'urgent', desc: t.value.tagFeature },
-      { id: 't3', label: 'docs', desc: t.value.tagRefactor },
-    ],
-    schema: {
-      type: 'tag_ref',
-      mapping: { tagId: 'id', tagName: 'label' },
-    },
-  },
-  {
-    char: '/',
-    mode: 'command' as const,
-    items: [
-      { id: 'clear', label: 'clear', desc: t.value.cmdClear },
-      { id: 'help', label: 'help', desc: t.value.cmdHelp },
-    ],
-    onSelect: (item: MentionItem) => {
-      if (item.id === 'clear') {
-        inputRef.value?.clear()
-      }
-      if (item.id === 'help') {
-        alert(t.value.helpMsg)
-      }
-    },
-  },
-])
+const triggers = computed(() =>
+  createDemoTriggers(uiStrings(locale.value), customAtItems.value, {
+    clear: () => inputRef.value?.clear(),
+    help: () => alert(uiStrings(locale.value).helpMsg),
+  }),
+)
 
-function onSubmit(parts: DataPart[]) {
+function onSubmit(parts: Part[]) {
   output.value = parts
   console.log('Submit:', parts)
 }
 
-function onChange(parts: ContentPart[]) {
+function onChange(parts: Part[]) {
   console.log('Change:', parts)
 }
 
@@ -97,68 +60,23 @@ function onUsageEnter(e: KeyboardEvent) {
   if (usageBlockEnter.value) e.preventDefault()
 }
 
-function onUsageSubmit(parts: DataPart[]) {
+function onUsageSubmit(parts: Part[]) {
   console.log('Usage submit:', parts)
 }
 
-const customTriggerDemo = computed<MentionTrigger[]>(() => [
-  {
-    char: '$',
-    items: [
-      { id: 'var-1', label: 'workspace.path', desc: t.value.customTriggerVarPath },
-      { id: 'var-2', label: 'workspace.branch', desc: t.value.customTriggerVarBranch },
-      { id: 'var-3', label: 'request.user', desc: t.value.customTriggerVarUser },
-    ],
-    dataPart: (item: MentionItem) => ({
-      dataType: 'variable_ref',
-      variableId: item.id,
-      key: item.label,
-    }),
-  },
-])
+const customTriggerDemo = computed(() => createCustomTriggerDemo(uiStrings(locale.value)))
 
 // 分页（加载更多）演示：模拟一个有大量结果的远程数据源
-const ALL_USERS: MentionItem[] = Array.from({ length: 120 }, (_, i) => ({
-  id: `u-${i + 1}`,
-  label: `User ${String(i + 1).padStart(3, '0')}`,
-  desc: `#${i + 1}`,
-}))
-
-const paginationDemo = computed<MentionTrigger[]>(() => [
-  {
-    char: '@',
-    pagination: { pageSize: 15 },
-    items: (query: string, page?: { offset: number; limit: number }) => {
-      const matched = ALL_USERS.filter((u) => u.label.toLowerCase().includes(query.toLowerCase()))
-      const offset = page?.offset ?? 0
-      const limit = page?.limit ?? matched.length
-      const slice = matched.slice(offset, offset + limit)
-      // 模拟网络延迟，便于看到 "Loading more..." 指示器
-      return new Promise<MentionItem[]>((resolve) => setTimeout(() => resolve(slice), 400))
-    },
-    dataPart: (item: MentionItem) => ({ dataType: 'user_ref', userId: item.id, name: item.label }),
-  },
-])
+const paginationDemo: MentionTrigger[] = [createPaginationTrigger()]
 
 function insertContextNode() {
   insertCount.value += 1
-  const index = insertCount.value
-  insertDemoRef.value?.insertMention({
-    id: `ctx-${index}`,
-    label: t.value.contextLabel(index),
-    dataPart: {
-      dataType: 'context_ref',
-      contextId: `ctx-${index}`,
-      source: 'selection',
-      content: t.value.contextContent(index),
-    },
-  })
+  insertDemoRef.value?.insertMention(createInsertPayload(uiStrings(locale.value), insertCount.value))
 }
-
 
 // 反序列化测试
 function loadSaved() {
-  inputRef.value?.setContent(t.value.savedParts)
+  inputRef.value?.setContent(getSavedParts(locale.value))
 }
 </script>
 
@@ -166,22 +84,16 @@ function loadSaved() {
   <div class="playground">
     <div class="header">
       <h1>Mentionly Playground <span class="version">v{{ version }}</span></h1>
-      <button class="lang-btn" @click="locale = locale === 'en' ? 'zh' : 'en'">
-        {{ locale === 'en' ? '中文' : 'EN' }}
-      </button>
+      <div class="header-tools">
+        <FrameworkSwitch :locale="locale" current="vue" />
+        <button class="lang-btn" @click="locale = alternateLocale(locale)">
+          {{ locale === 'en' ? '中文' : 'EN' }}
+        </button>
+      </div>
     </div>
     <div class="header-actions">
-      <a class="badge" href="https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml" target="_blank" rel="noreferrer">
-        <img src="https://github.com/jz0ojiang/mentionly/actions/workflows/test.yml/badge.svg" alt="tests" />
-      </a>
-      <a class="badge" href="https://www.npmjs.com/package/mentionly" target="_blank" rel="noreferrer">
-        <img src="https://img.shields.io/npm/v/mentionly?color=3b82f6&label=npm&logo=npm" alt="npm version" />
-      </a>
-      <a class="badge" href="https://www.npmjs.com/package/mentionly" target="_blank" rel="noreferrer">
-        <img src="https://img.shields.io/npm/dm/mentionly?color=10b981&label=downloads&logo=npm" alt="npm downloads" />
-      </a>
-      <a class="badge" href="https://github.com/jz0ojiang/mentionly" target="_blank" rel="noreferrer">
-        <img src="https://img.shields.io/badge/GitHub-Repo-111827?logo=github" alt="github repo" />
+      <a v-for="b in BADGES" :key="b.alt" class="badge" :href="b.href" target="_blank" rel="noreferrer">
+        <img :src="b.src" :alt="b.alt" />
       </a>
     </div>
     <p class="hint">
@@ -387,364 +299,17 @@ function loadSaved() {
           </div>
           <CodeBlock :code="t.paginationCode" :copy-label="t.copy" :copied-label="t.copied" />
         </div>
+
+        <div id="sec-deprecated" class="usage-section">
+          <div class="usage-header">
+            <h4>{{ t.deprecatedTitle }}</h4>
+            <p>{{ t.deprecatedDesc }}</p>
+          </div>
+          <CodeBlock :code="t.deprecatedCode" :copy-label="t.copy" :copied-label="t.copied" />
+        </div>
       </div>
     </section>
 
     <FloatingSectionIndicator :sections="tocSections" />
   </div>
 </template>
-
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #f9fafb;
-  color: #111827;
-}
-
-.playground {
-  max-width: 640px;
-  margin: 60px auto;
-  padding: 0 20px;
-}
-
-h1 {
-  font-size: 24px;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  gap: 12px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  font-size: 12px;
-  text-decoration: none;
-  transition: all 0.15s;
-}
-
-.badge:hover {
-  opacity: 0.85;
-}
-
-.badge img {
-  height: 18px;
-  display: block;
-}
-
-.lang-btn {
-  padding: 2px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 13px;
-  color: #374151;
-  transition: all 0.15s;
-}
-
-.lang-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.version {
-  font-size: 13px;
-  font-weight: 400;
-  color: #9ca3af;
-}
-
-.hint {
-  color: #6b7280;
-  margin-bottom: 24px;
-  font-size: 14px;
-}
-
-.section {
-  padding: 18px 0 22px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.section:first-of-type {
-  border-top: none;
-  padding-top: 0;
-}
-
-.section-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: #374151;
-  margin-bottom: 14px;
-}
-
-.hint code {
-  background: #e5e7eb;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.input-area {
-  margin-bottom: 12px;
-}
-
-.controls {
-  display: grid;
-  gap: 12px;
-}
-
-.usage-demo {
-  margin: 10px 0 12px;
-}
-
-.usage-controls {
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: #374151;
-}
-
-.usage-controls label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mode-switch {
-  margin-bottom: 16px;
-}
-
-.streaming-note {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.mode-switch label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #374151;
-}
-
-.mode-switch select {
-  padding: 4px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 13px;
-  background: #fff;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.actions button {
-  padding: 6px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
-}
-
-.actions button:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.output pre {
-  font-size: 12px;
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 8px;
-  overflow-x: auto;
-  line-height: 1.5;
-}
-
-.output-empty {
-  font-size: 12px;
-  color: #9ca3af;
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 8px;
-}
-
-
-.usage {
-  margin-top: 4px;
-}
-
-.usage-section {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 16px;
-  background: #fff;
-}
-
-.usage-header {
-  margin-bottom: 10px;
-}
-
-.usage-header h4 {
-  font-size: 15px;
-  color: #111827;
-  margin-bottom: 6px;
-}
-
-.usage-header p {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-
-.mention-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.mention-item.active,
-.mention-item:hover {
-  background: #f3f4f6;
-}
-
-.avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: #e5e7eb;
-  color: #374151;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.inner-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 8px 8px;
-}
-
-.send-btn {
-  padding: 4px 16px;
-  border: none;
-  border-radius: 6px;
-  background: #3b82f6;
-  color: #fff;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
-}
-
-.send-btn:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.send-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.extra-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.focus-btn {
-  padding: 2px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.custom-at {
-  margin-bottom: 16px;
-}
-
-.custom-at label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 14px;
-  color: #374151;
-}
-
-.custom-at-input {
-  padding: 6px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 13px;
-  background: #fff;
-  width: 100%;
-}
-
-.custom-at-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
-}
-
-.custom-at-preview {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.card-actions {
-  margin-top: 8px;
-}
-
-.card-btn {
-  padding: 6px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.card-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
-</style>
